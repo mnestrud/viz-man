@@ -1,0 +1,37 @@
+// Remote control input. webOS does not move focus on arrow keys by itself, so
+// every key is handled here by keyCode.
+
+const NAMES = {
+  37: "left",
+  38: "up",
+  39: "right",
+  40: "down",
+  13: "ok",
+  461: "back",
+  27: "back",
+  8: "back",
+  403: "red",
+  404: "green",
+  405: "yellow",
+  406: "blue",
+};
+
+export function keyName(event) {
+  if (event.key === "GoBack") return "back";
+  return NAMES[event.keyCode] || "";
+}
+
+export function installKeys(handler) {
+  window.addEventListener("keydown", (event) => {
+    const name = keyName(event);
+    if (!name) return;
+    event.preventDefault();
+    handler(name);
+  });
+}
+
+export function exitApp() {
+  const system = window.webOSSystem || window.PalmSystem;
+  if (system && typeof system.platformBack === "function") system.platformBack();
+  else window.close();
+}

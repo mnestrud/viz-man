@@ -1,0 +1,119 @@
+# Viz-Man
+
+A full-screen music visualizer for LG webOS TVs. It plays no audio: it draws
+what [Music Assistant](https://music-assistant.io/) is playing on your
+speakers, in time with it.
+
+Built for an LG CX (webOS 5, Chromium 68) and installed on a rooted TV with
+[Glasshouse](https://github.com/rorygallagher2024/lg-webos-dashboard).
+
+## What it shows
+
+| Visualizer | Needs |
+|---|---|
+| Winamp Bars, Winamp Thin Bars, Winamp Scope: the Winamp 2 spectrum analyzer and oscilloscope | Canvas 2D |
+| Radial bars, Ribbon, Ring scope, Lissajous, Kaleidoscope, Spirograph, Tunnel, Orbitals | Canvas 2D |
+| MilkDrop: 29 presets through Butterchurn, changing every 30 s | WebGL2 |
+
+MilkDrop is offered only if the TV gives out a WebGL2 context, and is taken
+out of rotation if it fails to start, loses its context, or runs below 15 fps.
+The eight middle visualizers are coloured from the playing album's artwork.
+Everything unlit is true black.
+
+## How it gets the music
+
+Music Assistant's **MilkDrop Visualizer** plugin streams the waveform of
+whatever a player is playing over a WebSocket (`/milkdrop_visualizer`), a few
+seconds ahead of time, along with beats and album colours. The app:
+
+- finds a player whose queue is playing (or uses the one named in `player`),
+- buffers the frames and shows each when the server's clock reaches it,
+- downsamples hi-res streams (96 kHz, 192 kHz) to about 48 kHz,
+- levels quiet tracks so they still fill the display.
+
+The plugin must be added in Music Assistant (Settings → Plugins), and the app
+needs a long-lived token for a Music Assistant user.
+
+## Remote
+
+| Key | Action |
+|---|---|
+| ← / → | Previous / next visualizer |
+| ↑ / ↓ | MilkDrop: next / previous preset |
+| OK | Menu: visualizer, preset, sync trim, Winamp colours, auto level, frame rate cap, hold screen when idle, debug readout |
+| Red / Green | Sync trim −25 ms / +25 ms |
+| Back | Close the menu, or leave the app |
+
+While music plays the app stops the TV's screensaver from starting; when it
+stops, the screensaver runs as usual unless "Hold screen when idle" is on.
+
+## Settings
+
+Copy `config.example.json` to `config.local.json` (git-ignored):
+
+| Key | Meaning |
+|---|---|
+| `host` | Music Assistant's address. An IP; `host:port` if it is not on 8095 |
+| `token` | Long-lived Music Assistant token |
+| `player` | Optional: a player id to watch instead of following whatever plays |
+| `holdWhenIdle` | Keep the screensaver off while nothing plays |
+| `report` | Address of a running dev server to report to (testing only) |
+
+These are baked into the package at build time, so **the package contains the
+token**. webOS launch parameters override them, and the query string overrides
+both when the page is opened in a browser.
+
+## Build and install
+
+```
+npm install
+npm run package        # dist/net.botworth.vizman_<version>_all.ipk
+```
+
+Hand the `.ipk` to Glasshouse (Apps tab, with sideloading on), either by
+uploading the file or by URL. `npm run serve-ipk` serves `dist/` on port 8138
+for the URL route; stop it afterwards.
+
+## Develop
+
+```
+npm test               # node --test
+npm run dev            # serves app/ on port 8137
+npm run probe -- <player_id> [seconds]   # print what the relay sends
+```
+
+Open `http://<host>:8137/?report=1&debug=1` in a desktop browser. Useful
+query flags:
+
+| Flag | Effect |
+|---|---|
+| `mock=1` | Synthetic signal instead of Music Assistant |
+| `debug=1` | On-screen readout: frame rate, connection, buffer, errors |
+| `report=1` | Post status and snapshots to the dev server, and take commands from it |
+| `noWebgl=1` | Behave as if WebGL2 were missing |
+| `player=<id>` | Watch one player |
+
+With `report=1` the page writes `status-*.json` and snapshots into `.dev/`,
+and runs commands queued on the dev server:
+
+```
+curl -d '{"type":"snapshot"}' http://localhost:8137/cmd
+curl -d '{"type":"key","key":"right"}' http://localhost:8137/cmd
+curl -d '{"type":"mode","id":"winamp-bars"}' http://localhost:8137/cmd
+curl -d '{"type":"blacks"}' http://localhost:8137/cmd
+```
+
+The dev server serves `app/config.js`, token included, to anyone who can reach
+the port. Run it only while testing.
+
+## Layout
+
+- `src/` — source, bundled by esbuild into `app/app.js` for Chromium 68
+- `src/vendor/` — third-party code, unchanged (see `app/THIRD_PARTY.md`)
+- `app/` — what gets packaged: page shell, manifest, icons, notices
+- `scripts/` — build, package, dev server, icon generator, relay probe
+- `test/` — unit tests
+
+## Licence
+
+MIT. Third-party code and its notices are listed in `app/THIRD_PARTY.md`.

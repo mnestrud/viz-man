@@ -1,0 +1,117 @@
+// The live signal: relay frames, buffered and released on the server's clock.
+import { createFollow } from "./follow.js";
+import { createRelay } from "./relay.js";
+import { loadPref, savePref } from "./settings.js";
+import { createTimeline } from "./timeline.js";
+
+const TRIM_LIMIT_MS = 2000;
+
+export function createLive(settings) {
+  const timeline = createTimeline();
+  let trimMs = loadPref("trim", 0);
+  let beatHit = 0;
+  let palette = null;
+  let showing = false;
+  let problem = "";
+  let follow = null;
+
+  const relay = createRelay({
+    host: settings.host,
+    token: settings.token,
+    handlers: {
+      wave(ts, samples) {
+        timeline.push(ts, samples);
+        follow.noteFrame();
+      },
+      beat(ts, downbeat) {
+        timeline.pushBeat(ts, downbeat);
+      },
+      clear() {
+        timeline.clear();
+      },
+      end() {
+        timeline.clear();
+        follow.noteEnd();
+      },
+      color(payload) {
+        palette = payload;
+      },
+      error(message) {
+        follow.noteError();
+        problem = message;
+      },
+      state(state) {
+        if (state === "rejected") problem = "Token rejected or expired. Rebuild with a new token.";
+        else if (state === "open") problem = "";
+      },
+    },
+  });
+
+  follow = createFollow({
+    host: settings.host,
+    token: settings.token,
+    pinned: settings.player,
+    relay,
+    onState(state) {
+      if (state === "rejected") problem = "Token rejected or expired. Rebuild with a new token.";
+    },
+  });
+
+  return {
+    // The waveform to draw now, or null when nothing is playing.
+    wave(nowMs) {
+      beatHit = 0;
+      if (!relay.clock.ready) {
+        showing = false;
+        return null;
+      }
+      // A positive trim shows each frame later.
+      const nowUs = relay.clock.serverUs(nowMs) - trimMs * 1000;
+      beatHit = timeline.takeBeat(nowUs);
+      const wave = timeline.pick(nowUs);
+      showing = wave !== null;
+      return wave;
+    },
+    get beatHit() {
+      return beatHit;
+    },
+    get sampleRate() {
+      return timeline.sampleRate;
+    },
+    get palette() {
+      return palette;
+    },
+    get showing() {
+      return showing;
+    },
+    get problem() {
+      return problem;
+    },
+    get trimMs() {
+      return trimMs;
+    },
+    nudgeTrim(deltaMs) {
+      trimMs = Math.max(-TRIM_LIMIT_MS, Math.min(TRIM_LIMIT_MS, trimMs + deltaMs));
+      savePref("trim", trimMs);
+    },
+    start() {
+      follow.start();
+    },
+    stop() {
+      follow.stop();
+      relay.close();
+      timeline.clear();
+      showing = false;
+    },
+    status() {
+      const nowUs = relay.clock.ready ? relay.clock.serverUs(performance.now()) : 0;
+      return {
+        relay: relay.state + (relay.reconnects ? " (" + relay.reconnects + " reconnects)" : ""),
+        follow: follow.state + (follow.player ? " " + follow.player : ""),
+        clock: relay.clock.ready ? "delay " + relay.clock.delayMs.toFixed(1) + "ms" : "syncing",
+        buffer: timeline.buffered + " frames, " + (timeline.leadUs(nowUs) / 1e6).toFixed(1) + "s ahead, " + timeline.sourceRate + "Hz source",
+        trim: trimMs + "ms",
+      };
+    },
+  };
+}

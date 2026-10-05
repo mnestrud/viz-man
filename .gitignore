@@ -1,0 +1,7 @@
+node_modules/
+dist/
+.dev/
+config.local.json
+app/app.js
+app/config.js
+app/vendor/

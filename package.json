@@ -1,0 +1,21 @@
+{
+  "name": "viz-man",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Music visualizer for LG webOS TVs, driven by Music Assistant",
+  "license": "MIT",
+  "scripts": {
+    "build": "scripts/build.sh",
+    "package": "scripts/package.sh",
+    "test": "node --test \"test/*.test.mjs\"",
+    "dev": "node scripts/dev-server.mjs",
+    "probe": "node scripts/relay-probe.mjs",
+    "serve-ipk": "scripts/serve-ipk.sh"
+  },
+  "devDependencies": {
+    "@webos-tools/cli": "^3.2.6",
+    "butterchurn": "2.6.7",
+    "butterchurn-presets": "2.4.7",
+    "esbuild": "^0.28.2"
+  }
+}
