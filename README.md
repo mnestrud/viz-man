@@ -93,8 +93,8 @@ query flags:
 | `noWebgl=1` | Behave as if WebGL2 were missing |
 | `player=<id>` | Watch one player |
 
-With `report=1` the page writes `status-*.json` and snapshots into `.dev/`,
-and runs commands queued on the dev server:
+With `report=1` the page holds a WebSocket to the dev server, which writes
+the page's `status-*.json` and snapshots into `.dev/` and passes on commands:
 
 ```
 curl -d '{"type":"snapshot"}' http://localhost:8137/cmd

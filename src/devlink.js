@@ -1,21 +1,31 @@
 // Test link to scripts/dev-server.mjs. Does nothing unless a report address is
-// configured. Posts status, posts canvas snapshots on request, and runs
-// commands queued on the server.
+// configured. Sends status, sends canvas snapshots on request, and runs the
+// commands the server passes on.
+//
+// It is a WebSocket rather than HTTP requests: the TV's browser sends none of
+// the latter from a packaged app's page, while WebSockets work.
 
 const STATUS_MS = 2000;
-const POLL_MS = 700;
+const RETRY_MS = 3000;
 const SHOT_WIDTH = 960;
 const SHOT_HEIGHT = 540;
 
 export function startDevlink({ base, client, getStatus, engine, onCommand }) {
   if (!base) return;
+  const url = base.replace(/^http/, "ws") + "/link?client=" + encodeURIComponent(client);
   const shot = document.createElement("canvas");
   shot.width = SHOT_WIDTH;
   shot.height = SHOT_HEIGHT;
   const shotCtx = shot.getContext("2d");
+  let socket = null;
   let wantShot = false;
   let wantBlacks = false;
   let lastBlacks = "";
+
+  function send(body) {
+    if (!socket || socket.readyState !== 1) return;
+    socket.send(JSON.stringify(Object.assign({ status: getStatus(), blacks: lastBlacks }, body)));
+  }
 
   // How much of the picture is true black, and how much is the near-black
   // haze an OLED shows as grey. 2D canvases only.
@@ -32,15 +42,6 @@ export function startDevlink({ base, client, getStatus, engine, onCommand }) {
     const pixels = data.length / 4;
     return (mode ? mode.name : "") + ": " + ((black / pixels) * 100).toFixed(1) + "% black, " + ((haze / pixels) * 100).toFixed(2) + "% haze (1-16)";
   }
-  let cursor = "new";
-
-  function post(body) {
-    fetch(base + "/report", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(Object.assign({ client, blacks: lastBlacks }, body)),
-    }).catch(() => {});
-  }
 
   // Snapshots are taken straight after a render so a WebGL canvas still holds
   // its frame, and scaled to what the panel shows.
@@ -54,10 +55,9 @@ export function startDevlink({ base, client, getStatus, engine, onCommand }) {
     try {
       shotCtx.imageSmoothingEnabled = !(mode && mode.pixelated);
       shotCtx.drawImage(canvas, 0, 0, SHOT_WIDTH, SHOT_HEIGHT);
-      const type = mode && mode.pixelated ? "image/png" : "image/jpeg";
-      post({ status: getStatus(), shot: shot.toDataURL(type, 0.85) });
+      send({ shot: shot.toDataURL(mode && mode.pixelated ? "image/png" : "image/jpeg", 0.85) });
     } catch (e) {
-      post({ status: getStatus(), shotError: String(e) });
+      send({ shotError: String(e) });
     }
   });
 
@@ -69,17 +69,21 @@ export function startDevlink({ base, client, getStatus, engine, onCommand }) {
     else onCommand(command);
   }
 
-  function poll() {
-    fetch(base + "/cmd?client=" + encodeURIComponent(client) + "&after=" + cursor)
-      .then((response) => response.json())
-      .then((data) => {
-        cursor = data.cursor;
-        for (const command of data.commands) run(command);
-      })
-      .catch(() => {});
+  function connect() {
+    const ws = new WebSocket(url);
+    socket = ws;
+    ws.onopen = () => send({});
+    ws.onmessage = (event) => {
+      try {
+        run(JSON.parse(event.data));
+      } catch (e) {
+        // not a command
+      }
+    };
+    ws.onclose = () => setTimeout(connect, RETRY_MS);
+    ws.onerror = () => {};
   }
 
-  setInterval(() => post({ status: getStatus() }), STATUS_MS);
-  setInterval(poll, POLL_MS);
-  post({ status: getStatus() });
+  setInterval(() => send({}), STATUS_MS);
+  connect();
 }
