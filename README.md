@@ -13,10 +13,12 @@ Built for an LG CX (webOS 5, Chromium 68) and installed on a rooted TV with
 |---|---|
 | Winamp Bars, Winamp Thin Bars, Winamp Scope: the Winamp 2 spectrum analyzer and oscilloscope | Canvas 2D |
 | Radial bars, Ribbon, Ring scope, Lissajous, Kaleidoscope, Spirograph, Tunnel, Orbitals | Canvas 2D |
-| MilkDrop: 29 presets through Butterchurn, changing every 30 s | WebGL2 |
+| MilkDrop presets through Butterchurn; pick one with ↑/↓, or have it change on a timer | WebGL2 |
 
 MilkDrop is offered only if the TV gives out a WebGL2 context, and is taken
-out of rotation if it fails to start, loses its context, or runs below 15 fps.
+out of rotation if it fails to start or loses its context. A preset that stays
+below 20 fps is skipped and remembered. The presets shipped are the ones named
+in `presets.json`, drawn from the butterchurn-presets packs.
 The eight middle visualizers are coloured from the playing album's artwork.
 Everything unlit is true black.
 
@@ -40,7 +42,7 @@ needs a long-lived token for a Music Assistant user.
 |---|---|
 | ← / → | Previous / next visualizer |
 | ↑ / ↓ | MilkDrop: next / previous preset |
-| OK | Menu: visualizer, preset, sync trim, Winamp colours, auto level, frame rate cap, hold screen when idle, debug readout |
+| OK | Menu: visualizer, preset, preset timer, sync trim, Winamp colours, auto level, frame rate cap, hold screen when idle, debug readout |
 | Red / Green | Sync trim −25 ms / +25 ms |
 | Back | Close the menu, or leave the app |
 
@@ -80,6 +82,7 @@ for the URL route; stop it afterwards.
 npm test               # node --test
 npm run dev            # serves app/ on port 8137
 npm run probe -- <player_id> [seconds]   # print what the relay sends
+npm run bench          # time every MilkDrop preset on a linked page (the TV)
 ```
 
 Open `http://<host>:8137/?report=1&debug=1` in a desktop browser. Useful

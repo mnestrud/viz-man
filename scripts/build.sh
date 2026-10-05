@@ -1,7 +1,8 @@
 #!/usr/bin/env bash
 # Usage: scripts/build.sh
 # Bundles src/main.js into app/app.js, writes app/config.js from
-# config.local.json, and copies the MilkDrop library into app/vendor/.
+# config.local.json, and puts the MilkDrop library and the presets named in
+# presets.json into app/vendor/.
 set -euo pipefail
 ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 PATH="$ROOT/node_modules/.bin:$PATH"
@@ -29,7 +30,8 @@ else
 fi
 
 mkdir -p "$OUT/vendor"
-cp "$ROOT/node_modules/butterchurn/lib/butterchurn.min.js" \
-   "$ROOT/node_modules/butterchurn-presets/lib/butterchurnPresetsMinimal.min.js" "$OUT/vendor/"
+rm -f "$OUT/vendor/butterchurnPresetsMinimal.min.js"
+cp "$ROOT/node_modules/butterchurn/lib/butterchurn.min.js" "$OUT/vendor/"
+node "$ROOT/scripts/make-presets.mjs"
 
 echo "built app/app.js ($(wc -c < "$OUT/app.js") bytes)"

@@ -10,15 +10,14 @@ import { createLive } from "./live.js";
 import { createMenu } from "./menu.js";
 import { createMock } from "./mock.js";
 import { classicModes, classicOptions } from "./modes/classic.js";
-import { clearMilkdropBlocks, createMilkdropMode, hasWebGL2, milkdropBlocker } from "./modes/milkdrop.js";
+import { ROTATE_CHOICES, clearMilkdropBlocks, createMilkdropMode, hasWebGL2, milkdropBlocker } from "./modes/milkdrop.js";
 import { wavescopeModes, wavescopeOptions } from "./modes/wavescope.js";
 import { loadPref, mergeSettings, normalizeParams, parseQuery, readLaunchParams, savePref } from "./settings.js";
 
 const TRIM_STEP_MS = 25;
 const MESSAGE_REFRESH_MS = 1000;
 const HINT_MS = 3000;
-const SLOW_FPS = 15;
-const SLOW_SECONDS = 10;
+const TOAST_MS = 3500;
 
 let booted = false;
 
@@ -33,6 +32,16 @@ function boot(event) {
     location.origin
   );
   const byId = (id) => document.getElementById(id);
+
+  // A line of text that fades: the visualizer or preset just switched to.
+  let toastTimer = 0;
+  function toast(text) {
+    const element = byId("toast");
+    element.textContent = text;
+    element.style.opacity = "1";
+    clearTimeout(toastTimer);
+    toastTimer = setTimeout(() => (element.style.opacity = "0"), TOAST_MS);
+  }
   const canvas = byId("canvas");
   const message = byId("message");
   const hint = byId("hint");
@@ -55,11 +64,15 @@ function boot(event) {
     milkdropOff = reason;
     debug.record("MilkDrop off: " + reason);
     engine.remove("milkdrop");
-  });
+    toast("MilkDrop off: " + reason);
+  }, toast);
   engine.register(classicModes);
   engine.register(wavescopeModes);
   if (!milkdropOff) engine.register([milkdrop]);
-  engine.onModeChange((mode) => savePref("mode", mode.id));
+  engine.onModeChange((mode) => {
+    savePref("mode", mode.id);
+    if (mode !== milkdrop) toast(mode.name); // MilkDrop announces its preset instead
+  });
 
   // Veto the screensaver only while this page is on screen and has something
   // to show (or was asked to hold the screen while idle).
@@ -75,8 +88,23 @@ function boot(event) {
     {
       label: "Preset",
       visible: () => engine.mode === milkdrop,
-      value: () => milkdrop.presetName,
+      value: () => milkdrop.presetPosition + "  " + milkdrop.presetName,
       change: (direction) => milkdrop.step(direction),
+    },
+    {
+      label: "Change preset",
+      visible: () => engine.mode === milkdrop,
+      value: () => (milkdrop.rotateSeconds ? "every " + (milkdrop.rotateSeconds < 60 ? milkdrop.rotateSeconds + " s" : milkdrop.rotateSeconds / 60 + " min") : "never"),
+      change(direction) {
+        const at = ROTATE_CHOICES.indexOf(milkdrop.rotateSeconds);
+        milkdrop.rotateSeconds = ROTATE_CHOICES[(at + direction + ROTATE_CHOICES.length) % ROTATE_CHOICES.length];
+      },
+    },
+    {
+      label: "Slow presets",
+      visible: () => engine.mode === milkdrop && milkdrop.slowCount > 0,
+      value: () => milkdrop.slowCount + " skipped (OK to try them again)",
+      change: () => milkdrop.forgetSlow(),
     },
     {
       label: "MilkDrop",
@@ -134,7 +162,7 @@ function boot(event) {
     Object.assign(
       {
         mode: engine.mode ? engine.mode.name : "-",
-        preset: engine.mode === milkdrop ? milkdrop.presetName : "-",
+        preset: engine.mode === milkdrop ? milkdrop.presetPosition + " " + milkdrop.presetName : "-",
         fps: engine.fps + " (cap " + engine.fpsCap + ")",
         canvas: (engine.mode && engine.mode.gl ? byId("gl").width + "x" + byId("gl").height + " gl" : canvas.width + "x" + canvas.height),
         window: window.innerWidth + "x" + window.innerHeight,
@@ -161,17 +189,6 @@ function boot(event) {
   }
   engine.onIdleChange(refreshMessage);
   setInterval(refreshMessage, MESSAGE_REFRESH_MS);
-
-  // MilkDrop that cannot keep up is worse than bars that can.
-  let slowSeconds = 0;
-  setInterval(() => {
-    const struggling = engine.running && engine.mode === milkdrop && milkdrop.ready && !engine.idle && engine.fps < SLOW_FPS;
-    slowSeconds = struggling ? slowSeconds + 1 : 0;
-    if (slowSeconds >= SLOW_SECONDS) {
-      savePref("milkdropSlow", true);
-      milkdrop.fail("too slow on this TV");
-    }
-  }, 1000);
 
   function onKey(name) {
     if (menu.handleKey(name)) return;
@@ -213,6 +230,7 @@ function boot(event) {
       else if (command.type === "debug") debug.show(!!command.on);
       else if (command.type === "floor") wavescopeOptions.floor = !!command.on;
       else if (command.type === "blank") wavescopeOptions.blank = !!command.on;
+      else if (command.type === "preset") milkdrop.showExternal(command.name, command.preset);
     },
   });
 

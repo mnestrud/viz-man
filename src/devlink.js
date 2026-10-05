@@ -64,6 +64,7 @@ export function startDevlink({ base, client, getStatus, engine, onCommand }) {
   function run(command) {
     if (command.type === "snapshot") wantShot = true;
     else if (command.type === "blacks") wantBlacks = true;
+    else if (command.type === "status") send({});
     else if (command.type === "reload") location.reload();
     else if (command.type === "go") location.search = command.query;
     else onCommand(command);
