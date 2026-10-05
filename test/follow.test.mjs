@@ -113,3 +113,12 @@ test("a rejected login stops the polling", (t) => {
   t.mock.timers.tick(60000);
   assert.equal(sockets.length, 1);
 });
+
+test("an API socket that never answers the login is reopened", (t) => {
+  const { follow, sockets } = harness(t);
+  follow.start();
+  sockets[0].receive({ server_version: "2.10.5" }); // login sent, no reply
+  t.mock.timers.tick(10000);
+  assert.equal(sockets.length, 2);
+  assert.equal(sockets[0].readyState, 3);
+});

@@ -9,6 +9,7 @@ const POLL_MS = 3000;
 const RESUME_MS = 3000; // wait this long after a stream ends before looking elsewhere
 const NO_FRAMES_MS = 5000; // a "playing" queue that sends nothing by then is skipped
 const RETRY_MS = 3000;
+const HANDSHAKE_MS = 10000; // an API socket must be logged in by then
 
 export function createFollow({ host, token, pinned, relay, WebSocketImpl, onState }) {
   const Socket = WebSocketImpl || WebSocket;
@@ -21,6 +22,7 @@ export function createFollow({ host, token, pinned, relay, WebSocketImpl, onStat
   let connectedAt = 0;
   let pollTimer = 0;
   let waitTimer = 0;
+  let helloTimer = 0;
   let state = "idle";
   const skipped = {}; // queue ids that claimed to play but sent no frames
 
@@ -35,7 +37,8 @@ export function createFollow({ host, token, pinned, relay, WebSocketImpl, onStat
     generation++;
     clearTimeout(pollTimer);
     clearTimeout(waitTimer);
-    pollTimer = waitTimer = 0;
+    clearTimeout(helloTimer);
+    pollTimer = waitTimer = helloTimer = 0;
     authed = false;
     if (socket) {
       try {
@@ -82,6 +85,10 @@ export function createFollow({ host, token, pinned, relay, WebSocketImpl, onStat
     const gen = generation;
     const ws = new Socket("ws://" + authority(host) + "/ws");
     socket = ws;
+    // Start over if the server never answers the login.
+    helloTimer = setTimeout(() => {
+      if (gen === generation && !authed) openApi();
+    }, HANDSHAKE_MS);
     ws.onmessage = (event) => {
       if (gen !== generation || typeof event.data !== "string") return;
       let message;

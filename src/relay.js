@@ -16,6 +16,7 @@ const FAST_PINGS = 8;
 const FAST_PING_MS = 250;
 const PING_MS = 5000;
 const PING_TIMEOUT_MS = 10000;
+const HANDSHAKE_MS = 10000; // a socket must be logged in by then
 const CLOCK_SAMPLES = 40;
 const BACKOFF_MIN_MS = 1000;
 const BACKOFF_MAX_MS = 30000;
@@ -77,6 +78,7 @@ export function createRelay({ host, token, handlers, WebSocketImpl, now }) {
   let state = "closed"; // closed | connecting | open | rejected
   let pingTimer = 0;
   let retryTimer = 0;
+  let handshakeTimer = 0;
   let pingsSent = 0;
   let lastReplyMs = 0;
   let backoffMs = BACKOFF_MIN_MS;
@@ -94,7 +96,8 @@ export function createRelay({ host, token, handlers, WebSocketImpl, now }) {
   function stopTimers() {
     clearTimeout(pingTimer);
     clearTimeout(retryTimer);
-    pingTimer = retryTimer = 0;
+    clearTimeout(handshakeTimer);
+    pingTimer = retryTimer = handshakeTimer = 0;
   }
 
   function ping(gen) {
@@ -142,6 +145,7 @@ export function createRelay({ host, token, handlers, WebSocketImpl, now }) {
     }
     const type = message.type;
     if (type === "auth_ok") {
+      clearTimeout(handshakeTimer);
       backoffMs = BACKOFF_MIN_MS;
       pingsSent = 0;
       lastReplyMs = localNow();
@@ -166,6 +170,11 @@ export function createRelay({ host, token, handlers, WebSocketImpl, now }) {
     const ws = new Socket("ws://" + authority(host) + "/milkdrop_visualizer?player=" + encodeURIComponent(player));
     ws.binaryType = "arraybuffer";
     socket = ws;
+    // A connection that opens but never answers would otherwise wait forever:
+    // the ping check only starts once logged in.
+    handshakeTimer = setTimeout(() => {
+      if (gen === generation && state !== "open") drop("no answer from the server");
+    }, HANDSHAKE_MS);
     ws.onopen = () => {
       if (gen === generation) ws.send(JSON.stringify({ type: "auth", token }));
     };

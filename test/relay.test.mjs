@@ -195,3 +195,26 @@ test("a 96 kHz stream is averaged down to one 48 kHz window from two frames", ()
   assert.equal(shown[512], 150, "second half from the newer one, pairs averaged");
   assert.equal(shown[1023], 150);
 });
+
+test("a socket that opens but is never logged in is replaced", (t) => {
+  t.mock.timers.enable({ apis: ["setTimeout"] });
+  const { Fake, made } = fakeSockets();
+  const relay = createRelay({ host: "h", token: "t", WebSocketImpl: Fake, now: () => 0, handlers: {} });
+  relay.connect("p");
+  made[0].open(); // auth is sent, but no auth_ok ever comes back
+  t.mock.timers.tick(9999);
+  assert.equal(made.length, 1);
+  t.mock.timers.tick(1);
+  assert.equal(made[0].readyState, 3, "the unanswered socket was closed");
+  t.mock.timers.tick(2000);
+  assert.equal(made.length, 2, "and a new one opened");
+});
+
+test("the Music Assistant port is 8095 unless the host names one", (t) => {
+  t.mock.timers.enable({ apis: ["setTimeout"] });
+  const { Fake, made } = fakeSockets();
+  const relay = createRelay({ host: "10.0.0.5:9000", token: "t", WebSocketImpl: Fake, now: () => 0, handlers: {} });
+  relay.connect("p");
+  assert.equal(made[0].url, "ws://10.0.0.5:9000/milkdrop_visualizer?player=p");
+  relay.close();
+});
