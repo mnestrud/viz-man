@@ -58,6 +58,10 @@ left for a few seconds, the way MTV captioned videos. "Track info" in the menu
 keeps the card on screen permanently, or turns it off. The details come from
 Music Assistant's queue, so they are as complete as its metadata.
 
+Favourites and the other settings are kept on the TV and mirrored to the
+Music Assistant user the app logs in as (in that user's preferences), so a
+reinstall that wipes the TV's app storage gets them back on the next launch.
+
 ## Settings
 
 Copy `config.example.json` to `config.local.json` (git-ignored):

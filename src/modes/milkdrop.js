@@ -211,6 +211,13 @@ export function createMilkdropMode(onFail, onNotice) {
     settle() {
       if (loading && !failed) savePref("milkdropPending", false);
     },
+    // Re-read the lists after preferences arrived from elsewhere.
+    reloadPrefs() {
+      slow = loadPref("slowPresets", []);
+      favourites = loadPref("favourites", []);
+      onlyFavourites = loadPref("onlyFavourites", false);
+      rotateSeconds = loadPref("presetRotate", 0);
+    },
     forgetSlow() {
       slow = [];
       savePref("slowPresets", slow);

@@ -2,7 +2,7 @@ import assert from "node:assert/strict";
 import { test } from "node:test";
 import { createFollow } from "../src/follow.js";
 
-function harness(t, pinned = "", onTrack) {
+function harness(t, pinned = "", onTrack, onRemotePrefs) {
   t.mock.timers.enable({ apis: ["setTimeout", "Date"] });
   const sockets = [];
   class Fake {
@@ -31,7 +31,7 @@ function harness(t, pinned = "", onTrack) {
     }
   }
   const relay = { connects: [], state: "closed", connect(id) { this.connects.push(id); this.state = "open"; } };
-  const follow = createFollow({ host: "h", token: "tok", pinned, relay, WebSocketImpl: Fake, onTrack });
+  const follow = createFollow({ host: "h", token: "tok", pinned, relay, WebSocketImpl: Fake, onTrack, onRemotePrefs });
   return { follow, relay, sockets };
 }
 
@@ -49,7 +49,7 @@ test("it logs in, polls, and connects the relay to the first playing queue", (t)
   follow.start();
   assert.equal(sockets[0].url, "ws://h:8095/ws");
   sockets[0].login();
-  assert.deepEqual(sockets[0].sent.map((m) => m.command), ["auth", "player_queues/all"]);
+  assert.deepEqual(sockets[0].sent.map((m) => m.command), ["auth", "auth/me", "player_queues/all"]);
   assert.equal(sockets[0].sent[0].args.token, "tok");
 
   sockets[0].queues({ a: "idle", b: "idle" });
@@ -57,7 +57,7 @@ test("it logs in, polls, and connects the relay to the first playing queue", (t)
   assert.equal(follow.state, "waiting");
 
   t.mock.timers.tick(3000);
-  assert.equal(sockets[0].sent.length, 3, "polled again");
+  assert.equal(sockets[0].sent.length, 4, "polled again");
   sockets[0].queues({ a: "idle", b: "playing", c: "playing" });
   assert.deepEqual(relay.connects, ["b"]);
   assert.equal(follow.state, "watching");
@@ -143,4 +143,26 @@ test("an API socket that never answers the login is reopened", (t) => {
   t.mock.timers.tick(10000);
   assert.equal(sockets.length, 2);
   assert.equal(sockets[0].readyState, 3);
+});
+
+test("preferences are read from the user account and saved back, never before the read", (t) => {
+  const remote = [];
+  const { follow, sockets } = harness(t, "", null, (prefs) => remote.push(prefs));
+  follow.start();
+  follow.savePrefs({ favourites: ["a"] }); // before login: must wait
+  sockets[0].login();
+  t.mock.timers.tick(5000);
+  assert.ok(!sockets[0].sent.some((m) => m.command === "auth/user/update"), "nothing saved before the remote copy is known");
+
+  sockets[0].receive({ message_id: "me", result: { user_id: "u", preferences: { theme: "dark", vizman: { favourites: ["x", "y"], trim: 25 } } } });
+  assert.deepEqual(remote, [{ favourites: ["x", "y"], trim: 25 }]);
+  const save = sockets[0].sent.find((m) => m.command === "auth/user/update");
+  assert.deepEqual(save.args.preferences, { theme: "dark", vizman: { favourites: ["a"] } }, "other preferences are kept, ours replaced");
+
+  follow.savePrefs({ favourites: ["a", "b"] });
+  follow.savePrefs({ favourites: ["a", "b", "c"] });
+  t.mock.timers.tick(1500);
+  const saves = sockets[0].sent.filter((m) => m.command === "auth/user/update");
+  assert.equal(saves.length, 2, "rapid changes are sent once");
+  assert.deepEqual(saves[1].args.preferences.vizman, { favourites: ["a", "b", "c"] });
 });

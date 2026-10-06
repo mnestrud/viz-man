@@ -8,12 +8,14 @@ import { authority } from "./relay.js";
 
 const POLL_MS = 3000;
 const TRACK_POLL_MS = 4000;
+const SAVE_DEBOUNCE_MS = 1500;
+const PREFS_KEY = "vizman"; // our entry in the user's preferences
 const RESUME_MS = 3000; // wait this long after a stream ends before looking elsewhere
 const NO_FRAMES_MS = 5000; // a "playing" queue that sends nothing by then is skipped
 const RETRY_MS = 3000;
 const HANDSHAKE_MS = 10000; // an API socket must be logged in by then
 
-export function createFollow({ host, token, pinned, relay, WebSocketImpl, onState, onTrack }) {
+export function createFollow({ host, token, pinned, relay, WebSocketImpl, onState, onTrack, onRemotePrefs }) {
   const Socket = WebSocketImpl || WebSocket;
   let socket = null;
   let generation = 0;
@@ -27,6 +29,9 @@ export function createFollow({ host, token, pinned, relay, WebSocketImpl, onStat
   let helloTimer = 0;
   let state = "idle";
   let trackId = null;
+  let remotePrefs = null; // the user's whole preferences object, once read
+  let pendingSave = null;
+  let saveTimer = 0;
   const skipped = {}; // queue ids that claimed to play but sent no frames
 
   function setState(next) {
@@ -43,6 +48,8 @@ export function createFollow({ host, token, pinned, relay, WebSocketImpl, onStat
     clearTimeout(helloTimer);
     pollTimer = waitTimer = helloTimer = 0;
     authed = false;
+    clearTimeout(saveTimer);
+    saveTimer = 0;
     if (socket) {
       try {
         socket.close();
@@ -115,6 +122,18 @@ export function createFollow({ host, token, pinned, relay, WebSocketImpl, onStat
     if (onTrack) onTrack(track);
   }
 
+  // Keeps this app's preferences on the Music Assistant user, so a reinstall
+  // (which can wipe the TV's storage) gets them back.
+  function pushSave() {
+    clearTimeout(saveTimer);
+    saveTimer = 0;
+    if (!pendingSave || remotePrefs === null || !socket || socket.readyState !== 1 || !authed) return;
+    const preferences = Object.assign({}, remotePrefs);
+    preferences[PREFS_KEY] = pendingSave;
+    pendingSave = null;
+    socket.send(JSON.stringify({ message_id: "save", command: "auth/user/update", args: { preferences } }));
+  }
+
   function openApi() {
     closeApi();
     if (!active) return;
@@ -138,6 +157,7 @@ export function createFollow({ host, token, pinned, relay, WebSocketImpl, onStat
       } else if (message.message_id === "auth") {
         if (message.result && message.result.authenticated) {
           authed = true;
+          ws.send(JSON.stringify({ message_id: "me", command: "auth/me" }));
           poll(gen);
         } else {
           setState("rejected");
@@ -148,6 +168,12 @@ export function createFollow({ host, token, pinned, relay, WebSocketImpl, onStat
         for (const queue of message.result) if (queue.queue_id === current) sawQueue(queue);
       } else if (message.message_id === "queue" && message.result) {
         sawQueue(message.result);
+      } else if (message.message_id === "me" && message.result) {
+        remotePrefs = message.result.preferences || {};
+        if (onRemotePrefs) onRemotePrefs(remotePrefs[PREFS_KEY] || {});
+        if (pendingSave) pushSave();
+      } else if (message.message_id === "save" && message.result) {
+        remotePrefs = message.result.preferences || remotePrefs;
       }
     };
     ws.onclose = () => {
@@ -199,6 +225,13 @@ export function createFollow({ host, token, pinned, relay, WebSocketImpl, onStat
     // A new track is starting on the relay: look up what it is straight away.
     noteClear() {
       poll(generation);
+    },
+    // Save a snapshot of the preferences remotely; sent once things settle,
+    // and never before the remote copy has been read and merged.
+    savePrefs(snapshot) {
+      pendingSave = snapshot;
+      clearTimeout(saveTimer);
+      saveTimer = setTimeout(pushSave, SAVE_DEBOUNCE_MS);
     },
     // The relay refused this player.
     noteError() {

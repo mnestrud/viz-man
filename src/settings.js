@@ -53,21 +53,73 @@ export function readLaunchParams(win, event) {
   return normalizeParams(system && system.launchParams);
 }
 
-// Preferences are a convenience only: webOS deletes localStorage on every app
-// update, and it can be unavailable altogether.
-export function loadPref(key, fallback) {
+// Preferences live in localStorage, which webOS may wipe on an app update and
+// which can be unavailable altogether, so they are also kept in memory here
+// and mirrored to the Music Assistant user account (see follow.js).
+const PREFIX = "vis.";
+const memory = {};
+let changeListener = null;
+
+function stored(key) {
   try {
-    const raw = localStorage.getItem("vis." + key);
-    return raw === null ? fallback : JSON.parse(raw);
+    const raw = localStorage.getItem(PREFIX + key);
+    return raw === null ? undefined : JSON.parse(raw);
   } catch (e) {
-    return fallback;
+    return undefined;
   }
 }
 
-export function savePref(key, value) {
+function store(key, value) {
+  memory[key] = value;
   try {
-    localStorage.setItem("vis." + key, JSON.stringify(value));
+    localStorage.setItem(PREFIX + key, JSON.stringify(value));
   } catch (e) {
-    // nothing to do: preferences are best-effort
+    // nothing to do: localStorage is a convenience
   }
+}
+
+export function loadPref(key, fallback) {
+  const value = stored(key);
+  if (value !== undefined) return value;
+  return key in memory ? memory[key] : fallback;
+}
+
+export function savePref(key, value) {
+  store(key, value);
+  if (changeListener) changeListener(allPrefs());
+}
+
+export function hasPref(key) {
+  return stored(key) !== undefined || key in memory;
+}
+
+// Every preference held locally.
+export function allPrefs() {
+  const all = Object.assign({}, memory);
+  try {
+    for (let i = 0; i < localStorage.length; i++) {
+      const name = localStorage.key(i);
+      if (name.indexOf(PREFIX) === 0) all[name.slice(PREFIX.length)] = JSON.parse(localStorage.getItem(name));
+    }
+  } catch (e) {
+    // memory copy only
+  }
+  return all;
+}
+
+export function onPrefChange(fn) {
+  changeListener = fn;
+}
+
+// Take over the preferences from a copy kept elsewhere, for the keys this
+// device has no value of its own for (a fresh install, say). Returns the keys
+// that were taken.
+export function mergePrefs(remote) {
+  const taken = [];
+  for (const key of Object.keys(remote || {})) {
+    if (hasPref(key)) continue;
+    store(key, remote[key]);
+    taken.push(key);
+  }
+  return taken;
 }

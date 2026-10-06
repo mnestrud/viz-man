@@ -16,6 +16,7 @@ export function createLive(settings) {
   let follow = null;
   let track = null;
   let trackListener = null;
+  let remoteListener = null;
 
   const relay = createRelay({
     host: settings.host,
@@ -62,6 +63,9 @@ export function createLive(settings) {
       track = next;
       if (trackListener) trackListener(next);
     },
+    onRemotePrefs(remote) {
+      if (remoteListener) remoteListener(remote);
+    },
   });
 
   return {
@@ -102,6 +106,15 @@ export function createLive(settings) {
     },
     onTrack(fn) {
       trackListener = fn;
+    },
+    onRemotePrefs(fn) {
+      remoteListener = fn;
+    },
+    savePrefs(snapshot) {
+      follow.savePrefs(snapshot);
+    },
+    reloadTrim() {
+      trimMs = loadPref("trim", 0);
     },
     nudgeTrim(deltaMs) {
       trimMs = Math.max(-TRIM_LIMIT_MS, Math.min(TRIM_LIMIT_MS, trimMs + deltaMs));

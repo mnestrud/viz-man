@@ -12,7 +12,7 @@ import { createMock } from "./mock.js";
 import { classicModes, classicOptions } from "./modes/classic.js";
 import { ROTATE_CHOICES, clearMilkdropBlocks, createMilkdropMode, hasWebGL2, milkdropBlocker } from "./modes/milkdrop.js";
 import { wavescopeModes, wavescopeOptions } from "./modes/wavescope.js";
-import { loadPref, mergeSettings, normalizeParams, parseQuery, readLaunchParams, savePref } from "./settings.js";
+import { allPrefs, loadPref, mergePrefs, mergeSettings, normalizeParams, onPrefChange, parseQuery, readLaunchParams, savePref } from "./settings.js";
 
 const TRIM_STEP_MS = 25;
 const MESSAGE_REFRESH_MS = 1000;
@@ -98,6 +98,31 @@ function boot(event) {
   engine.register(wavescopeModes);
   if (!milkdropOff) engine.register([milkdrop]);
   if (live) live.onTrack((track) => showTrackCard(track, trackMode === "start"));
+
+  // Preferences are mirrored to the Music Assistant user. Whatever arrives
+  // from there fills in what this TV does not have (after a reinstall, say),
+  // and every change is sent back.
+  function applyPrefs() {
+    analysis.autoLevel = loadPref("autoLevel", true);
+    classicOptions.album = loadPref("classicAlbum", false);
+    holdWhenIdle = loadPref("holdWhenIdle", settings.holdWhenIdle);
+    trackMode = loadPref("trackInfo", "start");
+    engine.setFpsCap(loadPref("fpsCap", 60));
+    milkdrop.reloadPrefs();
+    if (live) live.reloadTrim();
+    applyTrackMode();
+  }
+  if (live) {
+    live.onRemotePrefs((remote) => {
+      const taken = mergePrefs(remote);
+      if (taken.length) {
+        applyPrefs();
+        toast("Settings restored: " + taken.join(", "));
+      }
+      live.savePrefs(allPrefs());
+    });
+    onPrefChange((snapshot) => live.savePrefs(snapshot));
+  }
 
   engine.onModeChange((mode) => {
     savePref("mode", mode.id);
@@ -221,6 +246,7 @@ function boot(event) {
         preset: engine.mode === milkdrop ? milkdrop.presetPosition + " " + milkdrop.presetName : "-",
         slowPresets: milkdrop.slowCount,
         favourites: milkdrop.favouriteCount + (milkdrop.onlyFavourites ? " (browsing favourites)" : ""),
+        prefsSaved: Object.keys(allPrefs()).length + " keys",
         track: live && live.track ? live.track.artist + " / " + live.track.title : "-",
         trackInfo: trackMode + (trackCard.className === "shown" ? ", card shown" : ""),
         fps: engine.fps + " (cap " + engine.fpsCap + ")",

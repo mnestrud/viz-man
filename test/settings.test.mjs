@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import { test } from "node:test";
-import { mergeSettings, normalizeParams, parseQuery, readLaunchParams } from "../src/settings.js";
+import { allPrefs, hasPref, loadPref, mergePrefs, mergeSettings, normalizeParams, onPrefChange, parseQuery, readLaunchParams, savePref } from "../src/settings.js";
 
 test("query string is parsed, with bare keys meaning on", () => {
   assert.deepEqual(parseQuery("?mock=1&player=RINCON_1&debug"), { mock: "1", player: "RINCON_1", debug: "1" });
@@ -36,4 +36,21 @@ test("flags become booleans and report=1 means the page's own server", () => {
   assert.equal(merged.report, "http://192.168.113.31:8137");
   assert.equal(mergeSettings({ report: "http://host:1/" }, {}, {}, "").report, "http://host:1");
   assert.equal(mergeSettings({}, {}, {}, "http://x").report, "");
+});
+
+test("preferences fall back to memory without localStorage, and merging only fills gaps", () => {
+  const changes = [];
+  onPrefChange((snapshot) => changes.push(snapshot));
+  assert.equal(loadPref("favourites", "none"), "none");
+  savePref("favourites", ["a"]);
+  assert.deepEqual(loadPref("favourites"), ["a"]);
+  assert.equal(hasPref("favourites"), true);
+  assert.deepEqual(changes, [{ favourites: ["a"] }]);
+
+  const taken = mergePrefs({ favourites: ["remote"], trim: 50 });
+  assert.deepEqual(taken, ["trim"], "the local favourites win; the missing trim is taken");
+  assert.equal(loadPref("trim"), 50);
+  assert.deepEqual(allPrefs(), { favourites: ["a"], trim: 50 });
+  assert.equal(changes.length, 1, "merging does not count as a change");
+  onPrefChange(null);
 });
