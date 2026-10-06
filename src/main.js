@@ -12,7 +12,7 @@ import { createMock } from "./mock.js";
 import { classicModes, classicOptions } from "./modes/classic.js";
 import { ROTATE_CHOICES, clearMilkdropBlocks, createMilkdropMode, hasWebGL2, milkdropBlocker } from "./modes/milkdrop.js";
 import { wavescopeModes, wavescopeOptions } from "./modes/wavescope.js";
-import { allPrefs, loadPref, mergePrefs, mergeSettings, normalizeParams, onPrefChange, parseQuery, readLaunchParams, savePref } from "./settings.js";
+import { allPrefs, loadPref, mergePrefs, mergeSettings, normalizeParams, onPrefChange, parseQuery, readLaunchParams, savePref, takePrefs } from "./settings.js";
 
 const TRIM_STEP_MS = 25;
 const MESSAGE_REFRESH_MS = 1000;
@@ -77,6 +77,16 @@ function boot(event) {
   const configured = !!(settings.host && settings.token);
   let holdWhenIdle = loadPref("holdWhenIdle", settings.holdWhenIdle);
 
+  // Which TV this is, for its own settings on the account: the TV's serial
+  // number when webOS tells us, else a random id kept on the TV.
+  settings.deviceId = loadPref("deviceId", "");
+  if (!settings.deviceId) {
+    const system = window.webOSSystem || window.PalmSystem;
+    const info = normalizeParams(system && system.deviceInfo);
+    settings.deviceId = String(info.serialNumber || info.serial_number || "") || "tv-" + Math.random().toString(36).slice(2, 10);
+    savePref("deviceId", settings.deviceId);
+  }
+
   const analysis = createAnalysis();
   analysis.autoLevel = loadPref("autoLevel", true);
   classicOptions.album = loadPref("classicAlbum", false);
@@ -113,13 +123,23 @@ function boot(event) {
     applyTrackMode();
   }
   if (live) {
-    live.onRemotePrefs((remote) => {
-      const taken = mergePrefs(remote);
-      if (taken.length) {
-        applyPrefs();
-        toast("Settings restored: " + taken.join(", "));
+    let firstRemote = true;
+    live.onRemotePrefs((shared, device) => {
+      // Shared settings follow the account: a change made on another TV
+      // replaces this TV's copy. Per-TV settings only fill in what is missing.
+      let changed = mergePrefs(device);
+      for (const key of Object.keys(shared)) {
+        if (JSON.stringify(shared[key]) !== JSON.stringify(loadPref(key, null))) {
+          takePrefs({ [key]: shared[key] });
+          changed.push(key);
+        }
       }
-      live.savePrefs(allPrefs());
+      if (changed.length) {
+        applyPrefs();
+        toast((firstRemote ? "Settings restored: " : "Updated from the account: ") + changed.join(", "));
+      }
+      if (firstRemote) live.savePrefs(allPrefs());
+      firstRemote = false;
     });
     onPrefChange((snapshot) => live.savePrefs(snapshot));
   }
@@ -246,7 +266,7 @@ function boot(event) {
         preset: engine.mode === milkdrop ? milkdrop.presetPosition + " " + milkdrop.presetName : "-",
         slowPresets: milkdrop.slowCount,
         favourites: milkdrop.favouriteCount + (milkdrop.onlyFavourites ? " (browsing favourites)" : ""),
-        prefsSaved: Object.keys(allPrefs()).length + " keys",
+        prefsSaved: Object.keys(allPrefs()).length + " keys, device " + settings.deviceId,
         track: live && live.track ? live.track.artist + " / " + live.track.title : "-",
         trackInfo: trackMode + (trackCard.className === "shown" ? ", card shown" : ""),
         fps: engine.fps + " (cap " + engine.fpsCap + ")",

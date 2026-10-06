@@ -31,7 +31,7 @@ function harness(t, pinned = "", onTrack, onRemotePrefs) {
     }
   }
   const relay = { connects: [], state: "closed", connect(id) { this.connects.push(id); this.state = "open"; } };
-  const follow = createFollow({ host: "h", token: "tok", pinned, relay, WebSocketImpl: Fake, onTrack, onRemotePrefs });
+  const follow = createFollow({ host: "h", token: "tok", pinned, relay, WebSocketImpl: Fake, onTrack, onRemotePrefs, deviceId: "cx", sharedKeys: ["favourites"] });
   return { follow, relay, sockets };
 }
 
@@ -145,24 +145,30 @@ test("an API socket that never answers the login is reopened", (t) => {
   assert.equal(sockets[0].readyState, 3);
 });
 
-test("preferences are read from the user account and saved back, never before the read", (t) => {
+test("preferences are read from the account and saved back, shared ones on top and the rest per TV", (t) => {
   const remote = [];
-  const { follow, sockets } = harness(t, "", null, (prefs) => remote.push(prefs));
+  const { follow, sockets } = harness(t, "", null, (shared, device) => remote.push([shared, device]));
   follow.start();
-  follow.savePrefs({ favourites: ["a"] }); // before login: must wait
+  follow.savePrefs({ favourites: ["a"], trim: 25 }); // before login: must wait
   sockets[0].login();
   t.mock.timers.tick(5000);
   assert.ok(!sockets[0].sent.some((m) => m.command === "auth/user/update"), "nothing saved before the remote copy is known");
 
-  sockets[0].receive({ message_id: "me", result: { user_id: "u", preferences: { theme: "dark", vizman: { favourites: ["x", "y"], trim: 25 } } } });
-  assert.deepEqual(remote, [{ favourites: ["x", "y"], trim: 25 }]);
+  sockets[0].receive({ message_id: "me", result: { user_id: "u", preferences: { theme: "dark", vizman: { favourites: ["x", "y"], devices: { cx: { trim: 50 }, other: { trim: 0 } } } } } });
+  assert.deepEqual(remote, [[{ favourites: ["x", "y"] }, { trim: 50 }]], "this TV's own settings are handed over, not another TV's");
   const save = sockets[0].sent.find((m) => m.command === "auth/user/update");
-  assert.deepEqual(save.args.preferences, { theme: "dark", vizman: { favourites: ["a"] } }, "other preferences are kept, ours replaced");
+  assert.deepEqual(save.args.preferences, {
+    theme: "dark",
+    vizman: { favourites: ["a"], devices: { cx: { trim: 25 }, other: { trim: 0 } } },
+  }, "other preferences and other TVs are kept");
 
   follow.savePrefs({ favourites: ["a", "b"] });
   follow.savePrefs({ favourites: ["a", "b", "c"] });
   t.mock.timers.tick(1500);
   const saves = sockets[0].sent.filter((m) => m.command === "auth/user/update");
   assert.equal(saves.length, 2, "rapid changes are sent once");
-  assert.deepEqual(saves[1].args.preferences.vizman, { favourites: ["a", "b", "c"] });
+  assert.deepEqual(saves[1].args.preferences.vizman.favourites, ["a", "b", "c"]);
+
+  t.mock.timers.tick(60000);
+  assert.equal(sockets[0].sent.filter((m) => m.command === "auth/me").length, 2, "the account is re-read every minute for other TVs' changes");
 });

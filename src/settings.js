@@ -111,6 +111,15 @@ export function onPrefChange(fn) {
   changeListener = fn;
 }
 
+// Preferences shared by every TV on the account; the rest are per device.
+export const SHARED_PREFS = ["favourites"];
+
+// Overwrite preferences from a copy kept elsewhere, without counting it as a
+// local change.
+export function takePrefs(values) {
+  for (const key of Object.keys(values || {})) store(key, values[key]);
+}
+
 // Take over the preferences from a copy kept elsewhere, for the keys this
 // device has no value of its own for (a fresh install, say). Returns the keys
 // that were taken.

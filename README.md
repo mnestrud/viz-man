@@ -58,9 +58,12 @@ left for a few seconds, the way MTV captioned videos. "Track info" in the menu
 keeps the card on screen permanently, or turns it off. The details come from
 Music Assistant's queue, so they are as complete as its metadata.
 
-Favourites and the other settings are kept on the TV and mirrored to the
-Music Assistant user the app logs in as (in that user's preferences), so a
-reinstall that wipes the TV's app storage gets them back on the next launch.
+Settings are kept on the TV and mirrored to the Music Assistant user the app
+logs in as (in that user's preferences), so a reinstall that wipes the TV's
+app storage gets them back on the next launch. Favourites are shared by every
+TV using the account, and a change made on one TV reaches the others within a
+minute; everything else (sync trim, skipped presets, chosen preset, menu
+settings) is stored per TV.
 
 ## Settings
 

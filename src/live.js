@@ -1,7 +1,7 @@
 // The live signal: relay frames, buffered and released on the server's clock.
 import { createFollow } from "./follow.js";
 import { createRelay } from "./relay.js";
-import { loadPref, savePref } from "./settings.js";
+import { SHARED_PREFS, loadPref, savePref } from "./settings.js";
 import { createTimeline } from "./timeline.js";
 
 const TRIM_LIMIT_MS = 2000;
@@ -63,9 +63,11 @@ export function createLive(settings) {
       track = next;
       if (trackListener) trackListener(next);
     },
-    onRemotePrefs(remote) {
-      if (remoteListener) remoteListener(remote);
+    onRemotePrefs(shared, device) {
+      if (remoteListener) remoteListener(shared, device);
     },
+    deviceId: settings.deviceId,
+    sharedKeys: SHARED_PREFS,
   });
 
   return {

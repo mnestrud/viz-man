@@ -10,12 +10,13 @@ const POLL_MS = 3000;
 const TRACK_POLL_MS = 4000;
 const SAVE_DEBOUNCE_MS = 1500;
 const PREFS_KEY = "vizman"; // our entry in the user's preferences
+const REMOTE_REFRESH_MS = 60000; // how often another TV's changes are picked up
 const RESUME_MS = 3000; // wait this long after a stream ends before looking elsewhere
 const NO_FRAMES_MS = 5000; // a "playing" queue that sends nothing by then is skipped
 const RETRY_MS = 3000;
 const HANDSHAKE_MS = 10000; // an API socket must be logged in by then
 
-export function createFollow({ host, token, pinned, relay, WebSocketImpl, onState, onTrack, onRemotePrefs }) {
+export function createFollow({ host, token, pinned, relay, WebSocketImpl, onState, onTrack, onRemotePrefs, deviceId, sharedKeys }) {
   const Socket = WebSocketImpl || WebSocket;
   let socket = null;
   let generation = 0;
@@ -32,6 +33,7 @@ export function createFollow({ host, token, pinned, relay, WebSocketImpl, onStat
   let remotePrefs = null; // the user's whole preferences object, once read
   let pendingSave = null;
   let saveTimer = 0;
+  let refreshTimer = 0;
   const skipped = {}; // queue ids that claimed to play but sent no frames
 
   function setState(next) {
@@ -49,7 +51,8 @@ export function createFollow({ host, token, pinned, relay, WebSocketImpl, onStat
     pollTimer = waitTimer = helloTimer = 0;
     authed = false;
     clearTimeout(saveTimer);
-    saveTimer = 0;
+    clearTimeout(refreshTimer);
+    saveTimer = refreshTimer = 0;
     if (socket) {
       try {
         socket.close();
@@ -122,14 +125,28 @@ export function createFollow({ host, token, pinned, relay, WebSocketImpl, onStat
     if (onTrack) onTrack(track);
   }
 
+  // The shared part of a preferences snapshot (favourites and the like).
+  function sharedOf(prefs) {
+    const shared = {};
+    for (const key of sharedKeys || []) if (key in prefs) shared[key] = prefs[key];
+    return shared;
+  }
+
   // Keeps this app's preferences on the Music Assistant user, so a reinstall
-  // (which can wipe the TV's storage) gets them back.
+  // (which can wipe the TV's storage) gets them back: shared keys at the top,
+  // everything else under this TV's device id.
+  //   vizman: { favourites: [...], devices: { <deviceId>: {...} } }
   function pushSave() {
     clearTimeout(saveTimer);
     saveTimer = 0;
     if (!pendingSave || remotePrefs === null || !socket || socket.readyState !== 1 || !authed) return;
+    const ours = Object.assign({}, remotePrefs[PREFS_KEY] || {}, sharedOf(pendingSave));
+    const device = {};
+    for (const key of Object.keys(pendingSave)) if ((sharedKeys || []).indexOf(key) < 0) device[key] = pendingSave[key];
+    ours.devices = Object.assign({}, ours.devices || {});
+    ours.devices[deviceId] = device;
     const preferences = Object.assign({}, remotePrefs);
-    preferences[PREFS_KEY] = pendingSave;
+    preferences[PREFS_KEY] = ours;
     pendingSave = null;
     socket.send(JSON.stringify({ message_id: "save", command: "auth/user/update", args: { preferences } }));
   }
@@ -170,8 +187,13 @@ export function createFollow({ host, token, pinned, relay, WebSocketImpl, onStat
         sawQueue(message.result);
       } else if (message.message_id === "me" && message.result) {
         remotePrefs = message.result.preferences || {};
-        if (onRemotePrefs) onRemotePrefs(remotePrefs[PREFS_KEY] || {});
+        const ours = remotePrefs[PREFS_KEY] || {};
+        if (onRemotePrefs) onRemotePrefs(sharedOf(ours), (ours.devices || {})[deviceId] || {});
         if (pendingSave) pushSave();
+        clearTimeout(refreshTimer);
+        refreshTimer = setTimeout(() => {
+          if (gen === generation && authed) ws.send(JSON.stringify({ message_id: "me", command: "auth/me" }));
+        }, REMOTE_REFRESH_MS);
       } else if (message.message_id === "save" && message.result) {
         remotePrefs = message.result.preferences || remotePrefs;
       }
