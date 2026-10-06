@@ -161,8 +161,10 @@ function boot(event) {
   const debug = createDebug(byId("debug"), () =>
     Object.assign(
       {
+        version: typeof VIZ_VERSION === "string" ? VIZ_VERSION : "dev",
         mode: engine.mode ? engine.mode.name : "-",
         preset: engine.mode === milkdrop ? milkdrop.presetPosition + " " + milkdrop.presetName : "-",
+        slowPresets: milkdrop.slowCount,
         fps: engine.fps + " (cap " + engine.fpsCap + ")",
         canvas: (engine.mode && engine.mode.gl ? byId("gl").width + "x" + byId("gl").height + " gl" : canvas.width + "x" + canvas.height),
         window: window.innerWidth + "x" + window.innerHeight,

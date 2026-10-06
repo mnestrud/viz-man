@@ -14,7 +14,7 @@ const SCALE = 0.5; // render size relative to the window
 const SLOW_FPS = 20;
 const SLOW_SECONDS = 4; // this long below SLOW_FPS and a preset is skipped
 const SETTLE_SECONDS = 4; // not judged while loading and blending in
-const GIVE_UP_AFTER = 6; // this many slow presets in a row and MilkDrop is off
+const GIVE_UP_AFTER = 8; // this many slow presets in a row and MilkDrop is off
 export const ROTATE_CHOICES = [0, 30, 120, 300]; // seconds; 0 = stay on the chosen preset
 
 let probed = null;
@@ -77,6 +77,9 @@ export function createMilkdropMode(onFail, onNotice) {
   function fail(reason) {
     if (failed) return;
     failed = true;
+    // This code running means the page survived: whatever went wrong, it was
+    // not the TV dying inside Butterchurn.
+    savePref("milkdropPending", false);
     onFail(reason);
   }
 

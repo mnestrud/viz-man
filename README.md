@@ -18,7 +18,9 @@ Built for an LG CX (webOS 5, Chromium 68) and installed on a rooted TV with
 MilkDrop is offered only if the TV gives out a WebGL2 context, and is taken
 out of rotation if it fails to start or loses its context. A preset that stays
 below 20 fps is skipped and remembered. The presets shipped are the ones named
-in `presets.json`, drawn from the butterchurn-presets packs.
+in `presets.json`: those of the 395 in the butterchurn-presets packs that ran
+at 45 fps or better on the CX (`bench/lg-cx-webos5.json` has every result;
+`npm run bench` produces it).
 The eight middle visualizers are coloured from the playing album's artwork.
 Everything unlit is true black.
 

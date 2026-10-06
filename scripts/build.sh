@@ -10,8 +10,9 @@ OUT="$ROOT/app"
 
 # OffscreenCanvas: vendored code falls back to it only inside a worker, which
 # this app never is; defining it away keeps it out of the bundle.
+VERSION="$(node -p "require('$ROOT/app/appinfo.json').version")"
 esbuild "$ROOT/src/main.js" --bundle --format=iife --target=chrome68 --minify \
-  --define:OffscreenCanvas=undefined --log-level=warning --outfile="$OUT/app.js"
+  --define:OffscreenCanvas=undefined --define:VIZ_VERSION="\"$VERSION\"" --log-level=warning --outfile="$OUT/app.js"
 
 # esbuild lowers syntax only. Fail on APIs the TV's Chromium 68 does not have.
 TOO_NEW='globalThis|\.flat\(|\.flatMap\(|Object\.fromEntries|\.replaceAll\(|\.at\(|\.matchAll\(|Promise\.allSettled|structuredClone|OffscreenCanvas'
