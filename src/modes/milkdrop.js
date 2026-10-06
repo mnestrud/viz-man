@@ -5,7 +5,7 @@
 // Presets differ enormously in cost: on an LG CX some hold 60 fps and others
 // manage 5. A preset that stays slow is skipped and remembered, rather than
 // MilkDrop as a whole being given up on.
-import { loadPref, savePref } from "../settings.js";
+import { favouriteNames, favouritesFromList, loadPref, savePref } from "../settings.js";
 
 const SCRIPTS = ["./vendor/butterchurn.min.js", "./vendor/presets.js"];
 const BLEND_SECONDS = 2.7;
@@ -66,7 +66,9 @@ export function createMilkdropMode(onFail, onNotice) {
   let frames = 0;
   let sincePreset = 0;
   let slow = loadPref("slowPresets", []);
-  let favourites = loadPref("favourites", []);
+  // Favourites with the time each was last switched on or off (settings.js).
+  let favMeta = loadFavourites();
+  let favourites = favouriteNames(favMeta);
   let onlyFavourites = loadPref("onlyFavourites", false);
   let rotateSeconds = loadPref("presetRotate", 0);
   // frame-rate watch for the current preset
@@ -75,6 +77,11 @@ export function createMilkdropMode(onFail, onNotice) {
   let slowSeconds = 0;
   let skippedInARow = 0;
   let watching = true;
+
+  function loadFavourites() {
+    // The plain list from before the timestamps is folded in whenever present.
+    return favouritesFromList(loadPref("favourites", []), loadPref("favouritesMeta", null));
+  }
 
   function fail(reason) {
     if (failed) return;
@@ -198,6 +205,16 @@ export function createMilkdropMode(onFail, onNotice) {
     },
     step,
     fail,
+    // Jump to a preset by name, browsing the full list from there.
+    select(name) {
+      const at = names.indexOf(name);
+      if (!visualizer || at < 0) return false;
+      onlyFavourites = false;
+      savePref("onlyFavourites", false);
+      index = at;
+      showIndexed(BLEND_SECONDS);
+      return true;
+    },
     // Show a preset that is not in the package (used to measure candidates).
     // It is never skipped, so its true frame rate can be read.
     showExternal(name, preset) {
@@ -214,7 +231,8 @@ export function createMilkdropMode(onFail, onNotice) {
     // Re-read the lists after preferences arrived from elsewhere.
     reloadPrefs() {
       slow = loadPref("slowPresets", []);
-      favourites = loadPref("favourites", []);
+      favMeta = loadFavourites();
+      favourites = favouriteNames(favMeta);
       onlyFavourites = loadPref("onlyFavourites", false);
       rotateSeconds = loadPref("presetRotate", 0);
     },
@@ -225,11 +243,12 @@ export function createMilkdropMode(onFail, onNotice) {
     // Add or remove the current preset; returns whether it is now a favourite.
     toggleFavourite() {
       if (!current) return false;
-      const at = favourites.indexOf(current);
-      if (at >= 0) favourites.splice(at, 1);
-      else favourites.push(current);
-      savePref("favourites", favourites);
-      return at < 0;
+      const on = favourites.indexOf(current) < 0;
+      favMeta = Object.assign({}, favMeta);
+      favMeta[current] = { on, at: Date.now() };
+      favourites = favouriteNames(favMeta);
+      savePref("favouritesMeta", favMeta);
+      return on;
     },
     get isFavourite() {
       return favourites.indexOf(current) >= 0;

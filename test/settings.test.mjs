@@ -54,3 +54,17 @@ test("preferences fall back to memory without localStorage, and merging only fil
   assert.equal(changes.length, 1, "merging does not count as a change");
   onPrefChange(null);
 });
+
+test("favourites reconcile per preset by the time of the last change", async () => {
+  const { mergeFavourites, favouritesFromList, favouriteNames } = await import("../src/settings.js");
+  const mine = { a: { on: true, at: 100 }, b: { on: true, at: 100 }, c: { on: false, at: 300 } };
+  const theirs = { a: { on: false, at: 200 }, b: { on: false, at: 50 }, c: { on: true, at: 250 }, d: { on: true, at: 400 } };
+  const merged = mergeFavourites(mine, theirs);
+  assert.deepEqual(favouriteNames(merged).sort(), ["b", "d"], "a: their later removal wins; b: my later state wins; c: my later removal wins; d: new");
+  assert.equal(mergeFavourites(mine, { a: { on: true, at: 10 } }), mine, "nothing newer: same object back");
+  assert.equal(mergeFavourites(mine, {}), mine);
+  assert.deepEqual(mergeFavourites(undefined, theirs), theirs);
+  assert.deepEqual(favouritesFromList(["x"]), { x: { on: true, at: 0 } });
+  assert.deepEqual(favouritesFromList(["x", "y"], { x: { on: false, at: 5 } }), { x: { on: false, at: 5 }, y: { on: true, at: 0 } }, "folded into an existing map, which keeps its entries");
+  assert.deepEqual(favouriteNames(null), []);
+});

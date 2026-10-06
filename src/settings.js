@@ -112,7 +112,40 @@ export function onPrefChange(fn) {
 }
 
 // Preferences shared by every TV on the account; the rest are per device.
-export const SHARED_PREFS = ["favourites"];
+export const SHARED_PREFS = ["favouritesMeta"];
+
+// Favourites are kept as { name: { on, at } }: whether the preset is a
+// favourite and when that last changed (ms since the epoch). Reconciling two
+// copies keeps, for each preset, the change made last, so several devices can
+// add and remove at the same time and a stale copy can never undo a newer
+// change. Returns the merged map, or `a` itself when nothing in it changes.
+export function mergeFavourites(a, b) {
+  const mine = a || {};
+  const theirs = b || {};
+  let merged = null;
+  for (const name of Object.keys(theirs)) {
+    const ours = mine[name];
+    const other = theirs[name];
+    if (!other || typeof other !== "object") continue;
+    if (ours && (ours.at || 0) >= (other.at || 0)) continue;
+    if (!merged) merged = Object.assign({}, mine);
+    merged[name] = { on: !!other.on, at: other.at || 0 };
+  }
+  return merged || mine;
+}
+
+// A plain list of favourites, as kept before the timestamps, is folded into
+// the dated map: names the map has no entry for are added, dated to the
+// beginning of time so that any real change beats them.
+export function favouritesFromList(list, into) {
+  const map = Object.assign({}, into || {});
+  for (const name of list || []) if (!(name in map)) map[name] = { on: true, at: 0 };
+  return map;
+}
+
+export function favouriteNames(map) {
+  return Object.keys(map || {}).filter((name) => map[name] && map[name].on);
+}
 
 // Overwrite preferences from a copy kept elsewhere, without counting it as a
 // local change.

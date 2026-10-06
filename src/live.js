@@ -139,6 +139,7 @@ export function createLive(settings) {
         clock: relay.clock.ready ? "delay " + relay.clock.delayMs.toFixed(1) + "ms" : "syncing",
         buffer: timeline.buffered + " frames, " + (timeline.leadUs(nowUs) / 1e6).toFixed(1) + "s ahead, " + timeline.sourceRate + "Hz source",
         trim: trimMs + "ms",
+        sync: follow.syncLog,
       };
     },
   };

@@ -12,7 +12,7 @@ import { createMock } from "./mock.js";
 import { classicModes, classicOptions } from "./modes/classic.js";
 import { ROTATE_CHOICES, clearMilkdropBlocks, createMilkdropMode, hasWebGL2, milkdropBlocker } from "./modes/milkdrop.js";
 import { wavescopeModes, wavescopeOptions } from "./modes/wavescope.js";
-import { allPrefs, loadPref, mergePrefs, mergeSettings, normalizeParams, onPrefChange, parseQuery, readLaunchParams, savePref, takePrefs } from "./settings.js";
+import { allPrefs, favouriteNames, loadPref, mergeFavourites, mergePrefs, mergeSettings, normalizeParams, onPrefChange, parseQuery, readLaunchParams, savePref, takePrefs } from "./settings.js";
 
 const TRIM_STEP_MS = 25;
 const MESSAGE_REFRESH_MS = 1000;
@@ -125,18 +125,27 @@ function boot(event) {
   if (live) {
     let firstRemote = true;
     live.onRemotePrefs((shared, device) => {
-      // Shared settings follow the account: a change made on another TV
-      // replaces this TV's copy. Per-TV settings only fill in what is missing.
+      // Per-TV settings only fill in what is missing. Shared lists take on
+      // what the account has that this device lacks; nothing is ever removed
+      // locally by a read, so a stale copy from the server cannot lose work.
       let changed = mergePrefs(device);
-      for (const key of Object.keys(shared)) {
-        if (JSON.stringify(shared[key]) !== JSON.stringify(loadPref(key, null))) {
-          takePrefs({ [key]: shared[key] });
-          changed.push(key);
+      let favouriteNote = "";
+      if (shared.favouritesMeta) {
+        const mine = loadPref("favouritesMeta", null) || {};
+        const merged = mergeFavourites(mine, shared.favouritesMeta);
+        if (merged !== mine) {
+          const before = favouriteNames(mine);
+          const after = favouriteNames(merged);
+          const added = after.filter((n) => before.indexOf(n) < 0).length;
+          const removed = before.filter((n) => after.indexOf(n) < 0).length;
+          takePrefs({ favouritesMeta: merged });
+          changed.push("favourites");
+          favouriteNote = " (" + (added ? "+" + added : "") + (added && removed ? " " : "") + (removed ? "-" + removed : "") + ")";
         }
       }
       if (changed.length) {
         applyPrefs();
-        toast((firstRemote ? "Settings restored: " : "Updated from the account: ") + changed.join(", "));
+        toast((firstRemote ? "Settings restored: " : "Updated from the account: ") + changed.join(", ") + favouriteNote);
       }
       if (firstRemote) live.savePrefs(allPrefs());
       firstRemote = false;
@@ -343,6 +352,7 @@ function boot(event) {
       else if (command.type === "floor") wavescopeOptions.floor = !!command.on;
       else if (command.type === "blank") wavescopeOptions.blank = !!command.on;
       else if (command.type === "preset") milkdrop.showExternal(command.name, command.preset);
+      else if (command.type === "goto") milkdrop.select(command.name);
     },
   });
 
