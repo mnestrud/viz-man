@@ -5,7 +5,7 @@
 //   ws://<host>:8095/ws: server info, then {command:"auth"}, then commands.
 
 import { authority } from "./relay.js";
-import { favouritesFromList, mergeFavourites } from "./settings.js";
+import { favoritesFromList, mergeFavorites } from "./settings.js";
 
 const POLL_MS = 3000;
 const TRACK_POLL_MS = 4000;
@@ -128,17 +128,19 @@ export function createFollow({ host, token, pinned, relay, WebSocketImpl, onStat
     if (onTrack) onTrack(track);
   }
 
-  // The shared part of a preferences snapshot (favourites and the like). An
+  // The shared part of a preferences snapshot (favorites and the like). An
   // account written before the timestamps holds a plain list; it is read as
   // the dated form.
   function sharedOf(prefs) {
     const shared = {};
     for (const key of sharedKeys || []) if (key in prefs) shared[key] = prefs[key];
-    if (Array.isArray(prefs.favourites)) shared.favouritesMeta = favouritesFromList(prefs.favourites, shared.favouritesMeta);
+    if (!shared.favoritesMeta && prefs.favouritesMeta) shared.favoritesMeta = prefs.favouritesMeta; // earlier spelling
+    if (Array.isArray(prefs.favorites)) shared.favoritesMeta = favoritesFromList(prefs.favorites, shared.favoritesMeta);
+    if (Array.isArray(prefs.favourites)) shared.favoritesMeta = favoritesFromList(prefs.favourites, shared.favoritesMeta);
     return shared;
   }
 
-  // How many favourites are on in a dated map, or the length of a list.
+  // How many favorites are on in a dated map, or the length of a list.
   function count(value) {
     if (Array.isArray(value)) return value.length;
     if (value && typeof value === "object") return Object.keys(value).filter((k) => value[k] && value[k].on).length;
@@ -154,7 +156,7 @@ export function createFollow({ host, token, pinned, relay, WebSocketImpl, onStat
   // is added, what it removed is removed, and whatever other TVs did in the
   // meantime stays.
   function mergeShared(theirs, mine, before, key) {
-    if (key === "favouritesMeta") return mergeFavourites(theirs, mine);
+    if (key === "favoritesMeta") return mergeFavorites(theirs, mine);
     if (!Array.isArray(mine)) return mine === undefined ? theirs : mine;
     const was = Array.isArray(before) ? before : [];
     const now = Array.isArray(theirs) ? theirs.slice() : [];
@@ -185,7 +187,7 @@ export function createFollow({ host, token, pinned, relay, WebSocketImpl, onStat
   // Keeps this app's preferences on the Music Assistant user, so a reinstall
   // (which can wipe the TV's storage) gets them back: shared keys at the top,
   // everything else under this TV's device id.
-  //   vizman: { favourites: [...], devices: { <deviceId>: {...} } }
+  //   vizman: { favorites: [...], devices: { <deviceId>: {...} } }
   function pushSave() {
     if (!pendingSave || remotePrefs === null || !socket || socket.readyState !== 1 || !authed) return;
     const theirs = sharedOf(remotePrefs[PREFS_KEY] || {});
@@ -195,8 +197,10 @@ export function createFollow({ host, token, pinned, relay, WebSocketImpl, onStat
       const value = mergeShared(theirs[key], mine[key], (base || {})[key], key);
       if (value !== undefined) merged[key] = value;
     }
-    note("save: account " + count(theirs.favouritesMeta) + ", mine " + count(mine.favouritesMeta) + " -> " + count(merged.favouritesMeta));
+    note("save: account " + count(theirs.favoritesMeta) + ", mine " + count(mine.favoritesMeta) + " -> " + count(merged.favoritesMeta));
     const ours = Object.assign({}, remotePrefs[PREFS_KEY] || {}, merged);
+    delete ours.favouritesMeta; // superseded by favoritesMeta
+    delete ours.favourites;
     const device = {};
     for (const key of Object.keys(pendingSave)) if ((sharedKeys || []).indexOf(key) < 0) device[key] = pendingSave[key];
     ours.devices = Object.assign({}, ours.devices || {});
@@ -247,7 +251,7 @@ export function createFollow({ host, token, pinned, relay, WebSocketImpl, onStat
         const ours = remotePrefs[PREFS_KEY] || {};
         // The first read always reaches the page (it restores settings); later
         // ones are skipped while a save is waiting, which gets merged instead.
-        note("read " + count(sharedOf(ours).favouritesMeta) + (base === null ? " (first)" : pendingSave ? " (for a save)" : ""));
+        note("read " + count(sharedOf(ours).favoritesMeta) + (base === null ? " (first)" : pendingSave ? " (for a save)" : ""));
         if (base === null) {
           base = {}; // nothing merged yet: a first save adds to the account's lists
           if (onRemotePrefs) onRemotePrefs(sharedOf(ours), (ours.devices || {})[deviceId] || {});
@@ -263,7 +267,7 @@ export function createFollow({ host, token, pinned, relay, WebSocketImpl, onStat
       } else if (message.message_id === "save" && message.result) {
         remotePrefs = message.result.preferences || remotePrefs;
         const saved = sharedOf(remotePrefs[PREFS_KEY] || {});
-        note("saved " + count(saved.favouritesMeta));
+        note("saved " + count(saved.favoritesMeta));
         base = saved;
         // Another TV's changes may have been merged in; let the page adopt them.
         if (onRemotePrefs) onRemotePrefs(saved, {});

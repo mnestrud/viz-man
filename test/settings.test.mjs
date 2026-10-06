@@ -41,30 +41,30 @@ test("flags become booleans and report=1 means the page's own server", () => {
 test("preferences fall back to memory without localStorage, and merging only fills gaps", () => {
   const changes = [];
   onPrefChange((snapshot) => changes.push(snapshot));
-  assert.equal(loadPref("favourites", "none"), "none");
-  savePref("favourites", ["a"]);
-  assert.deepEqual(loadPref("favourites"), ["a"]);
-  assert.equal(hasPref("favourites"), true);
-  assert.deepEqual(changes, [{ favourites: ["a"] }]);
+  assert.equal(loadPref("favorites", "none"), "none");
+  savePref("favorites", ["a"]);
+  assert.deepEqual(loadPref("favorites"), ["a"]);
+  assert.equal(hasPref("favorites"), true);
+  assert.deepEqual(changes, [{ favorites: ["a"] }]);
 
-  const taken = mergePrefs({ favourites: ["remote"], trim: 50 });
-  assert.deepEqual(taken, ["trim"], "the local favourites win; the missing trim is taken");
+  const taken = mergePrefs({ favorites: ["remote"], trim: 50 });
+  assert.deepEqual(taken, ["trim"], "the local favorites win; the missing trim is taken");
   assert.equal(loadPref("trim"), 50);
-  assert.deepEqual(allPrefs(), { favourites: ["a"], trim: 50 });
+  assert.deepEqual(allPrefs(), { favorites: ["a"], trim: 50 });
   assert.equal(changes.length, 1, "merging does not count as a change");
   onPrefChange(null);
 });
 
-test("favourites reconcile per preset by the time of the last change", async () => {
-  const { mergeFavourites, favouritesFromList, favouriteNames } = await import("../src/settings.js");
+test("favorites reconcile per preset by the time of the last change", async () => {
+  const { mergeFavorites, favoritesFromList, favoriteNames } = await import("../src/settings.js");
   const mine = { a: { on: true, at: 100 }, b: { on: true, at: 100 }, c: { on: false, at: 300 } };
   const theirs = { a: { on: false, at: 200 }, b: { on: false, at: 50 }, c: { on: true, at: 250 }, d: { on: true, at: 400 } };
-  const merged = mergeFavourites(mine, theirs);
-  assert.deepEqual(favouriteNames(merged).sort(), ["b", "d"], "a: their later removal wins; b: my later state wins; c: my later removal wins; d: new");
-  assert.equal(mergeFavourites(mine, { a: { on: true, at: 10 } }), mine, "nothing newer: same object back");
-  assert.equal(mergeFavourites(mine, {}), mine);
-  assert.deepEqual(mergeFavourites(undefined, theirs), theirs);
-  assert.deepEqual(favouritesFromList(["x"]), { x: { on: true, at: 0 } });
-  assert.deepEqual(favouritesFromList(["x", "y"], { x: { on: false, at: 5 } }), { x: { on: false, at: 5 }, y: { on: true, at: 0 } }, "folded into an existing map, which keeps its entries");
-  assert.deepEqual(favouriteNames(null), []);
+  const merged = mergeFavorites(mine, theirs);
+  assert.deepEqual(favoriteNames(merged).sort(), ["b", "d"], "a: their later removal wins; b: my later state wins; c: my later removal wins; d: new");
+  assert.equal(mergeFavorites(mine, { a: { on: true, at: 10 } }), mine, "nothing newer: same object back");
+  assert.equal(mergeFavorites(mine, {}), mine);
+  assert.deepEqual(mergeFavorites(undefined, theirs), theirs);
+  assert.deepEqual(favoritesFromList(["x"]), { x: { on: true, at: 0 } });
+  assert.deepEqual(favoritesFromList(["x", "y"], { x: { on: false, at: 5 } }), { x: { on: false, at: 5 }, y: { on: true, at: 0 } }, "folded into an existing map, which keeps its entries");
+  assert.deepEqual(favoriteNames(null), []);
 });

@@ -15,7 +15,7 @@ const NAMES = {
   405: "yellow",
   406: "blue",
   // Keyboard stand-ins for the colour keys, for the page in a browser.
-  70: "yellow", // F: favourite
+  70: "yellow", // F: favorite
   76: "blue", // L: list
   82: "red", // R: trim earlier
   71: "green", // G: trim later

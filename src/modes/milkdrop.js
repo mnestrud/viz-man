@@ -5,7 +5,7 @@
 // Presets differ enormously in cost: on an LG CX some hold 60 fps and others
 // manage 5. A preset that stays slow is skipped and remembered, rather than
 // MilkDrop as a whole being given up on.
-import { favouriteNames, favouritesFromList, loadPref, savePref } from "../settings.js";
+import { favoriteNames, favoritesFromList, loadPref, savePref } from "../settings.js";
 
 const SCRIPTS = ["./vendor/butterchurn.min.js", "./vendor/presets.js"];
 const BLEND_SECONDS = 2.7;
@@ -66,10 +66,10 @@ export function createMilkdropMode(onFail, onNotice) {
   let frames = 0;
   let sincePreset = 0;
   let slow = loadPref("slowPresets", []);
-  // Favourites with the time each was last switched on or off (settings.js).
-  let favMeta = loadFavourites();
-  let favourites = favouriteNames(favMeta);
-  let onlyFavourites = loadPref("onlyFavourites", false);
+  // Favorites with the time each was last switched on or off (settings.js).
+  let favMeta = loadFavorites();
+  let favorites = favoriteNames(favMeta);
+  let onlyFavorites = loadPref("onlyFavorites", loadPref("onlyFavourites", false));
   let rotateSeconds = loadPref("presetRotate", 0);
   // frame-rate watch for the current preset
   let windowTime = 0;
@@ -78,9 +78,11 @@ export function createMilkdropMode(onFail, onNotice) {
   let skippedInARow = 0;
   let watching = true;
 
-  function loadFavourites() {
-    // The plain list from before the timestamps is folded in whenever present.
-    return favouritesFromList(loadPref("favourites", []), loadPref("favouritesMeta", null));
+  function loadFavorites() {
+    // The plain list from before the timestamps is folded in whenever present,
+    // as is the map saved under its earlier spelling.
+    const meta = loadPref("favoritesMeta", null) || loadPref("favouritesMeta", null);
+    return favoritesFromList(loadPref("favorites", []) || loadPref("favourites", []), meta);
   }
 
   function fail(reason) {
@@ -106,10 +108,10 @@ export function createMilkdropMode(onFail, onNotice) {
   }
 
   // Whether a preset is in the list being browsed: all of them, or the
-  // favourites (when there are any), minus the ones known to be slow.
+  // favorites (when there are any), minus the ones known to be slow.
   function listed(name) {
     if (slow.indexOf(name) >= 0) return false;
-    return !onlyFavourites || !favourites.length || favourites.indexOf(name) >= 0;
+    return !onlyFavorites || !favorites.length || favorites.indexOf(name) >= 0;
   }
 
   // Move to the next listed preset in `direction`.
@@ -209,8 +211,8 @@ export function createMilkdropMode(onFail, onNotice) {
     select(name) {
       const at = names.indexOf(name);
       if (!visualizer || at < 0) return false;
-      onlyFavourites = false;
-      savePref("onlyFavourites", false);
+      onlyFavorites = false;
+      savePref("onlyFavorites", false);
       index = at;
       showIndexed(BLEND_SECONDS);
       return true;
@@ -231,37 +233,37 @@ export function createMilkdropMode(onFail, onNotice) {
     // Re-read the lists after preferences arrived from elsewhere.
     reloadPrefs() {
       slow = loadPref("slowPresets", []);
-      favMeta = loadFavourites();
-      favourites = favouriteNames(favMeta);
-      onlyFavourites = loadPref("onlyFavourites", false);
+      favMeta = loadFavorites();
+      favorites = favoriteNames(favMeta);
+      onlyFavorites = loadPref("onlyFavorites", false);
       rotateSeconds = loadPref("presetRotate", 0);
     },
     forgetSlow() {
       slow = [];
       savePref("slowPresets", slow);
     },
-    // Add or remove the current preset; returns whether it is now a favourite.
-    toggleFavourite() {
+    // Add or remove the current preset; returns whether it is now a favorite.
+    toggleFavorite() {
       if (!current) return false;
-      const on = favourites.indexOf(current) < 0;
+      const on = favorites.indexOf(current) < 0;
       favMeta = Object.assign({}, favMeta);
       favMeta[current] = { on, at: Date.now() };
-      favourites = favouriteNames(favMeta);
-      savePref("favouritesMeta", favMeta);
+      favorites = favoriteNames(favMeta);
+      savePref("favoritesMeta", favMeta);
       return on;
     },
-    get isFavourite() {
-      return favourites.indexOf(current) >= 0;
+    get isFavorite() {
+      return favorites.indexOf(current) >= 0;
     },
-    get favouriteCount() {
-      return favourites.length;
+    get favoriteCount() {
+      return favorites.length;
     },
-    get onlyFavourites() {
-      return onlyFavourites;
+    get onlyFavorites() {
+      return onlyFavorites;
     },
-    set onlyFavourites(on) {
-      onlyFavourites = on;
-      savePref("onlyFavourites", on);
+    set onlyFavorites(on) {
+      onlyFavorites = on;
+      savePref("onlyFavorites", on);
     },
     get slowCount() {
       return slow.length;

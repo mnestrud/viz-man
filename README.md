@@ -43,14 +43,14 @@ needs a long-lived token for a Music Assistant user.
 | Key | Action |
 |---|---|
 | ← / → | Previous / next visualizer |
-| ↑ / ↓ | MilkDrop: next / previous preset, within all presets or just the favourites |
-| OK | Menu: visualizer, preset, favourite, preset list (all / favourites), preset timer, track info, sync trim, Winamp colours, auto level, frame rate cap, hold screen when idle, debug readout |
+| ↑ / ↓ | MilkDrop: next / previous preset, within all presets or just the favorites |
+| OK | Menu: visualizer, preset, favorite, preset list (all / favorites), preset timer, track info, sync trim, Winamp colours, auto level, frame rate cap, hold screen when idle, debug readout |
 | Red / Green | Sync trim −25 ms / +25 ms |
-| Yellow | MilkDrop: add or remove the preset from the favourites |
-| Blue | MilkDrop: switch between all presets and the favourites |
+| Yellow | MilkDrop: add or remove the preset from the favorites |
+| Blue | MilkDrop: switch between all presets and the favorites |
 
 In a browser, F and L stand in for yellow and blue, R and G for red and green;
-arrows, Enter and Escape work as on the remote. Favourites marked in the
+arrows, Enter and Escape work as on the remote. Favorites marked in the
 browser sync to the TVs through the account like any other.
 | Back | Close the menu, or leave the app |
 
@@ -64,7 +64,7 @@ Music Assistant's queue, so they are as complete as its metadata.
 
 Settings are kept on the TV and mirrored to the Music Assistant user the app
 logs in as (in that user's preferences), so a reinstall that wipes the TV's
-app storage gets them back on the next launch. Favourites are shared by every
+app storage gets them back on the next launch. Favorites are shared by every
 TV using the account, and a change made on one TV reaches the others within a
 minute; everything else (sync trim, skipped presets, chosen preset, menu
 settings) is stored per TV.

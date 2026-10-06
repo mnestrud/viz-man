@@ -12,7 +12,7 @@ import { createMock } from "./mock.js";
 import { classicModes, classicOptions } from "./modes/classic.js";
 import { ROTATE_CHOICES, clearMilkdropBlocks, createMilkdropMode, hasWebGL2, milkdropBlocker } from "./modes/milkdrop.js";
 import { wavescopeModes, wavescopeOptions } from "./modes/wavescope.js";
-import { allPrefs, favouriteNames, loadPref, mergeFavourites, mergePrefs, mergeSettings, normalizeParams, onPrefChange, parseQuery, readLaunchParams, savePref, takePrefs } from "./settings.js";
+import { allPrefs, favoriteNames, loadPref, mergeFavorites, mergePrefs, mergeSettings, normalizeParams, onPrefChange, parseQuery, readLaunchParams, savePref, takePrefs } from "./settings.js";
 
 const TRIM_STEP_MS = 25;
 const MESSAGE_REFRESH_MS = 1000;
@@ -36,12 +36,12 @@ function boot(event) {
   const byId = (id) => document.getElementById(id);
 
   // A line of text that fades: the visualizer or preset just switched to,
-  // a favourite added, settings synced. Shown only with the debug readout on;
+  // a favorite added, settings synced. Shown only with the debug readout on;
   // otherwise the screen carries nothing but the visuals and the track card.
   let toastTimer = 0;
   let debug = null; // the readout, created once the engine exists
-  function toast(text) {
-    if (!debug || !debug.visible) return;
+  function toast(text, always) {
+    if (!always && (!debug || !debug.visible)) return;
     const element = byId("toast");
     element.textContent = text;
     element.style.opacity = "1";
@@ -138,23 +138,23 @@ function boot(event) {
       // what the account has that this device lacks; nothing is ever removed
       // locally by a read, so a stale copy from the server cannot lose work.
       let changed = mergePrefs(device);
-      let favouriteNote = "";
-      if (shared.favouritesMeta) {
-        const mine = loadPref("favouritesMeta", null) || {};
-        const merged = mergeFavourites(mine, shared.favouritesMeta);
+      let favoriteNote = "";
+      if (shared.favoritesMeta) {
+        const mine = loadPref("favoritesMeta", null) || {};
+        const merged = mergeFavorites(mine, shared.favoritesMeta);
         if (merged !== mine) {
-          const before = favouriteNames(mine);
-          const after = favouriteNames(merged);
+          const before = favoriteNames(mine);
+          const after = favoriteNames(merged);
           const added = after.filter((n) => before.indexOf(n) < 0).length;
           const removed = before.filter((n) => after.indexOf(n) < 0).length;
-          takePrefs({ favouritesMeta: merged });
-          changed.push("favourites");
-          favouriteNote = " (" + (added ? "+" + added : "") + (added && removed ? " " : "") + (removed ? "-" + removed : "") + ")";
+          takePrefs({ favoritesMeta: merged });
+          changed.push("favorites");
+          favoriteNote = " (" + (added ? "+" + added : "") + (added && removed ? " " : "") + (removed ? "-" + removed : "") + ")";
         }
       }
       if (changed.length) {
         applyPrefs();
-        toast((firstRemote ? "Settings restored: " : "Updated from the account: ") + changed.join(", ") + favouriteNote);
+        toast((firstRemote ? "Settings restored: " : "Updated from the account: ") + changed.join(", ") + favoriteNote);
       }
       if (firstRemote) live.savePrefs(allPrefs());
       firstRemote = false;
@@ -185,18 +185,18 @@ function boot(event) {
       change: (direction) => milkdrop.step(direction),
     },
     {
-      label: "Favourite",
+      label: "Favorite",
       visible: () => engine.mode === milkdrop && milkdrop.ready,
-      value: () => (milkdrop.isFavourite ? "\u2605 yes" : "no"),
-      change: () => toast(milkdrop.toggleFavourite() ? "\u2605 Added to favourites" : "Removed from favourites"),
+      value: () => (milkdrop.isFavorite ? "\u2605 yes" : "no"),
+      change: () => toast(milkdrop.toggleFavorite() ? "\u2605 Added to favorites" : "Removed from favorites", true),
     },
     {
       label: "Preset list",
       visible: () => engine.mode === milkdrop,
-      value: () => (milkdrop.onlyFavourites ? "favourites (" + milkdrop.favouriteCount + ")" : "all"),
+      value: () => (milkdrop.onlyFavorites ? "favorites (" + milkdrop.favoriteCount + ")" : "all"),
       change() {
-        milkdrop.onlyFavourites = !milkdrop.onlyFavourites;
-        if (milkdrop.onlyFavourites && !milkdrop.favouriteCount) toast("No favourites yet: showing all presets");
+        milkdrop.onlyFavorites = !milkdrop.onlyFavorites;
+        if (milkdrop.onlyFavorites && !milkdrop.favoriteCount) toast("No favorites yet: showing all presets");
       },
     },
     {
@@ -283,7 +283,7 @@ function boot(event) {
         mode: engine.mode ? engine.mode.name : "-",
         preset: engine.mode === milkdrop ? milkdrop.presetPosition + " " + milkdrop.presetName : "-",
         slowPresets: milkdrop.slowCount,
-        favourites: milkdrop.favouriteCount + (milkdrop.onlyFavourites ? " (browsing favourites)" : ""),
+        favorites: milkdrop.favoriteCount + (milkdrop.onlyFavorites ? " (browsing favorites)" : ""),
         prefsSaved: Object.keys(allPrefs()).length + " keys, device " + settings.deviceId,
         track: live && live.track ? live.track.artist + " / " + live.track.title : "-",
         trackInfo: trackMode + (trackCard.className === "shown" ? ", card shown" : ""),
@@ -324,10 +324,10 @@ function boot(event) {
     else if (name === "red" && live) live.nudgeTrim(-TRIM_STEP_MS);
     else if (name === "green" && live) live.nudgeTrim(TRIM_STEP_MS);
     else if (name === "yellow" && engine.mode === milkdrop && milkdrop.ready) {
-      toast(milkdrop.toggleFavourite() ? "\u2605 Added to favourites" : "Removed from favourites");
+      toast(milkdrop.toggleFavorite() ? "\u2605 Added to favorites" : "Removed from favorites", true);
     } else if (name === "blue" && engine.mode === milkdrop) {
-      milkdrop.onlyFavourites = !milkdrop.onlyFavourites;
-      toast(milkdrop.onlyFavourites ? (milkdrop.favouriteCount ? "Favourites (" + milkdrop.favouriteCount + ")" : "No favourites yet: all presets") : "All presets");
+      milkdrop.onlyFavorites = !milkdrop.onlyFavorites;
+      toast(milkdrop.onlyFavorites ? (milkdrop.favoriteCount ? "Favorites (" + milkdrop.favoriteCount + ")" : "No favorites yet: all presets") : "All presets");
     }
     else if (name === "back") exitApp();
   }

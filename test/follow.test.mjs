@@ -31,7 +31,7 @@ function harness(t, pinned = "", onTrack, onRemotePrefs) {
     }
   }
   const relay = { connects: [], state: "closed", connect(id) { this.connects.push(id); this.state = "open"; } };
-  const follow = createFollow({ host: "h", token: "tok", pinned, relay, WebSocketImpl: Fake, onTrack, onRemotePrefs, deviceId: "cx", sharedKeys: ["favourites"] });
+  const follow = createFollow({ host: "h", token: "tok", pinned, relay, WebSocketImpl: Fake, onTrack, onRemotePrefs, deviceId: "cx", sharedKeys: ["favorites"] });
   return { follow, relay, sockets };
 }
 
@@ -149,23 +149,23 @@ test("preferences are read from the account and saved back, shared ones on top a
   const remote = [];
   const { follow, sockets } = harness(t, "", null, (shared, device) => remote.push([shared, device]));
   follow.start();
-  follow.savePrefs({ favourites: ["a"], trim: 25 }); // before login: must wait
+  follow.savePrefs({ favorites: ["a"], trim: 25 }); // before login: must wait
   sockets[0].login();
   t.mock.timers.tick(5000);
   assert.ok(!sockets[0].sent.some((m) => m.command === "auth/user/update"), "nothing saved before the remote copy is known");
 
-  sockets[0].receive({ message_id: "me", result: { user_id: "u", preferences: { theme: "dark", vizman: { favourites: ["x", "y"], devices: { cx: { trim: 50 }, other: { trim: 0 } } } } } });
-  assert.deepEqual(remote, [[{ favourites: ["x", "y"], favouritesMeta: { x: { on: true, at: 0 }, y: { on: true, at: 0 } } }, { trim: 50 }]], "this TV's own settings are handed over, not another TV's");
+  sockets[0].receive({ message_id: "me", result: { user_id: "u", preferences: { theme: "dark", vizman: { favorites: ["x", "y"], devices: { cx: { trim: 50 }, other: { trim: 0 } } } } } });
+  assert.deepEqual(remote, [[{ favorites: ["x", "y"], favoritesMeta: { x: { on: true, at: 0 }, y: { on: true, at: 0 } } }, { trim: 50 }]], "this TV's own settings are handed over, not another TV's");
   const save = sockets[0].sent.find((m) => m.command === "auth/user/update");
   assert.deepEqual(save.args.preferences, {
     theme: "dark",
-    vizman: { favourites: ["x", "y", "a"], devices: { cx: { trim: 25 }, other: { trim: 0 } } },
-  }, "other preferences and other TVs are kept; favourites merged");
+    vizman: { favorites: ["x", "y", "a"], devices: { cx: { trim: 25 }, other: { trim: 0 } } },
+  }, "other preferences and other TVs are kept; favorites merged");
   sockets[0].receive({ message_id: "save", result: { preferences: save.args.preferences } });
 
   // A save first re-reads the account and merges: another TV added "z" and
   // removed "y" meanwhile, this one removes "x" and adds "b".
-  follow.savePrefs({ favourites: ["y", "a", "b"] });
+  follow.savePrefs({ favorites: ["y", "a", "b"] });
   t.mock.timers.tick(1500);
   const reread = sockets[0].sent[sockets[0].sent.length - 1];
   assert.equal(reread.command, "auth", "logs in again before saving, which refreshes the server's copy of the user");
@@ -174,15 +174,15 @@ test("preferences are read from the account and saved back, shared ones on top a
   const pollsBefore = sockets[0].sent.filter((m) => m.command === "player_queues/all").length;
   t.mock.timers.tick(1);
   assert.equal(sockets[0].sent.filter((m) => m.command === "player_queues/all").length, pollsBefore, "re-login does not restart the polling");
-  sockets[0].receive({ message_id: "me", result: { preferences: { theme: "dark", vizman: { favourites: ["x", "a", "z"], devices: {} } } } });
+  sockets[0].receive({ message_id: "me", result: { preferences: { theme: "dark", vizman: { favorites: ["x", "a", "z"], devices: {} } } } });
   const saves = sockets[0].sent.filter((m) => m.command === "auth/user/update");
-  assert.deepEqual(saves[1].args.preferences.vizman.favourites, ["a", "z", "b"]);
+  assert.deepEqual(saves[1].args.preferences.vizman.favorites, ["a", "z", "b"]);
 
   t.mock.timers.tick(60000);
   assert.ok(sockets[0].sent.filter((m) => m.command === "auth").length >= 3, "the account is re-read every minute for other TVs' changes");
 });
 
-test("dated favourites: a save merges newest-per-preset with the account, even a stale one", (t) => {
+test("dated favorites: a save merges newest-per-preset with the account, even a stale one", (t) => {
   t.mock.timers.enable({ apis: ["setTimeout", "Date"] });
   const sockets = [];
   class Fake {
@@ -193,22 +193,22 @@ test("dated favourites: a save merges newest-per-preset with the account, even a
   }
   const relay = { connects: [], state: "closed", connect(id) { this.connects.push(id); this.state = "open"; } };
   const seen = [];
-  const follow = createFollow({ host: "h", token: "tok", pinned: "p", relay, WebSocketImpl: Fake, deviceId: "cx", sharedKeys: ["favouritesMeta"], onRemotePrefs: (s) => seen.push(s) });
+  const follow = createFollow({ host: "h", token: "tok", pinned: "p", relay, WebSocketImpl: Fake, deviceId: "cx", sharedKeys: ["favoritesMeta"], onRemotePrefs: (s) => seen.push(s) });
   follow.start();
   sockets[0].receive({ server_version: "2.10.5" });
   sockets[0].receive({ message_id: "auth", result: { authenticated: true } });
   // an account from before the timestamps: a plain list
-  sockets[0].receive({ message_id: "me", result: { preferences: { vizman: { favourites: ["old"] } } } });
-  assert.deepEqual(seen[0], { favouritesMeta: { old: { on: true, at: 0 } } }, "a plain list is read as dated favourites");
+  sockets[0].receive({ message_id: "me", result: { preferences: { vizman: { favorites: ["old"] } } } });
+  assert.deepEqual(seen[0], { favoritesMeta: { old: { on: true, at: 0 } } }, "a plain list is read as dated favorites");
 
   // this device removed "old" at 500 and added "new" at 600
-  follow.savePrefs({ favouritesMeta: { old: { on: false, at: 500 }, new: { on: true, at: 600 } } });
+  follow.savePrefs({ favoritesMeta: { old: { on: false, at: 500 }, new: { on: true, at: 600 } } });
   t.mock.timers.tick(1500);
   sockets[0].receive({ message_id: "auth", result: { authenticated: true } });
   // the server answers with a stale copy in which another device re-added "old" at 700 and added "z" at 100
-  sockets[0].receive({ message_id: "me", result: { preferences: { vizman: { favouritesMeta: { old: { on: true, at: 700 }, z: { on: true, at: 100 } } } } } });
+  sockets[0].receive({ message_id: "me", result: { preferences: { vizman: { favoritesMeta: { old: { on: true, at: 700 }, z: { on: true, at: 100 } } } } } });
   const save = sockets[0].sent.filter((m) => m.command === "auth/user/update").pop();
-  assert.deepEqual(save.args.preferences.vizman.favouritesMeta, {
+  assert.deepEqual(save.args.preferences.vizman.favoritesMeta, {
     old: { on: true, at: 700 }, // their later change wins
     z: { on: true, at: 100 },
     new: { on: true, at: 600 },
