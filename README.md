@@ -76,7 +76,10 @@ npm run package        # dist/net.botworth.vizman_<version>_all.ipk
 
 Hand the `.ipk` to Glasshouse (Apps tab, with sideloading on), either by
 uploading the file or by URL. `npm run serve-ipk` serves `dist/` on port 8138
-for the URL route; stop it afterwards.
+for the URL route; stop it afterwards. If Glasshouse's page stalls at its
+preview step, `npm run install-tv -- <tv-ip>` does the upload and the
+confirmation through its API. Either way the install stops the running app;
+open it again from the TV's home screen.
 
 ## Develop
 
