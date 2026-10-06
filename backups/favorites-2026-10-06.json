@@ -1,6 +1,6 @@
 {
- "savedAt": "2026-10-06T10:38:27",
- "count": 84,
+ "savedAt": "2026-10-06T11:09:53",
+ "count": 110,
  "favorites": [
   "$$$ Royal - Mashup (253)",
   "$$$ Royal - Mashup (326)",
@@ -38,6 +38,10 @@
   "flexi + amandio c - organic",
   "flexi + amandio c - organic [random mashup]",
   "Flexi + amandio c - piercing 05 - Kopie (2) - Kopie",
+  "flexi + bdrv - acid etching (jelly v5.5)",
+  "flexi + geiss - pogo cubes vs. tokamak vs. game of life [stahls jelly 4.5 finish]",
+  "Flexi + Martin - cascading decay swing",
+  "flexi + stahlregen - jelly strike",
   "Flexi - alien fader",
   "flexi - bouncing balls [illumination mix]",
   "flexi - color strike",
@@ -52,39 +56,61 @@
   "Flexi - reality tunnel",
   "flexi - swing out on the spiral",
   "Flexi - truly soft piece of software - this is generic texturing (Jelly) ",
+  "Flexi, martin + geiss - dedicated to the sherwin maxawow",
+  "Flexi, Martin, Phat, Zylot + Eo.S - one way trip trap proof of concept [epileptic zoom tunnel edit]",
+  "Geiss + Rovastar - Notions Of Tonality 2",
+  "Geiss - Cauldron - painterly 2 (saturation remix)",
+  "Geiss - Color Pox (Acid Impression Mix) (color saturation remix)",
+  "Geiss - Feedback 2",
+  "Geiss - Reaction Diffusion 3 (Lichen Mix)",
+  "Ishan - Anuera",
+  "Krash + Illusion + Geiss - Spiral Movement (Reaction Diffusion mix)",
+  "LuxXx - Fuck Your Code ii",
   "martin + stahlregen - martin in da mash 14",
+  "martin - another kind of groove",
+  "martin - basal ganglion",
+  "martin - bombyx mori [flexi\u2032s logarithmic edit]",
+  "Martin - cool morning",
+  "Martin - Diabolo",
+  "martin - disco mix 4",
+  "Martin - disco mix 6",
+  "martin - glass corridor",
+  "martin - infinity (2010 update)",
+  "martin - into the fireworks",
+  "martin - soma in pink",
+  "martin - starfield sectors",
+  "martin - stormy sea (2010 update)",
+  "martin - violet flash",
   "martin [shadow harlequins shape code] - fata morgana",
   "Milk Artist At our Best - FED - SlowFast Ft AdamFX n Martin - HD CosmoFX",
+  "orb - toxic goo",
   "phat + Eo.S. - Bass_responce_Red_Movements_Disorienting nebula3",
   "Phat + Zylot + Eo.S. - work with lines",
   "Phat_Zylot_Eo.S. spiral_Movements_Beatle",
   "Phat_Zylot_Eo.S. square_faces_v2_alt_colours",
   "PieturP - triptrap_(getting_concrete_visions_through_a_diafragma_version)",
   "Redi Jedi - i dont think those were portabello mushrooms",
-  "Rocke - Answer.42 (New Mix 1) - mash0000 - slash and char p. jungle",
-  "Rovastar + Che - Asylum Animations",
   "Rovastar + Flexi - Hurricane Nightmare (Moebius Mix)",
-  "Rovastar + Geiss - Hurricane Nightmare",
+  "Rovastar + Geiss - Hurricane Nightmare (Relief Mix)",
   "Rovastar + Geiss - Hyperkaleidoscope Glow 2 motion blur (Jelly)",
-  "Rovastar + Geiss - Hyperspace - kaleidoscope",
   "Rovastar + Loadus + Geiss - FractalDrop (Triple Mix)",
-  "Rovastar + Telek - Altars of Madness (Rolling Oceans Mix)",
   "Rovastar - Explosive Minds",
   "Rovastar - Harlequin\u2032s Fractal Encounter - cancer of saints",
   "Rovastar - Oozing Resistance",
   "Rovastar - Torrid Tales",
   "Rovastar - Trippy Sperm (Jelly)",
   "Stahlregen & flexi + Geiss + Rovastar + Shifter - Fractal Feedback (for Hexcollie)",
+  "stahlregen & geiss + rovastar - fields of flowers (mashup 9 - space flower rmx) - mash0001 - pack em in, we got a long haul + flashlight",
   "stahlregen - old school, baby (spiral ornament)",
   "suksma - heretical crosscut playpen",
-  "TEcHNO & SandStorm - Psychodelic Highway",
+  "suksma - Rovastar - Sunflower Passion (Enlightment Mix)_Phat_edit + flexi und martin shaders - circumflex in character classes in regular expression",
   "Telek - City Helix Lattice",
-  "TonyMilkdrop - Magellan's Nebula [Flexi - fancy + $this shall not retain]",
-  "Unchained - Fuzzy Sciences",
-  "Unchained - Rewop",
+  "TonyMilkdrop - Magellan's Nebula [Flexi - you enter first + multiverse]",
   "Zylot - Crossing Over (Paint Spatter mix)",
   "Zylot - In death there is life (Geiss Layered Mix) (Jelly)",
   "Zylot - Paint Spill (Music Reactive Paint Mix)",
+  "Zylot - Star Ornament",
+  "Zylot - True Visionary",
   "Zylot - True Visionary (Final Mix)"
  ],
  "favoritesMeta": {
@@ -98,7 +124,7 @@
   },
   "martin [shadow harlequins shape code] - fata morgana": {
    "on": true,
-   "at": 0
+   "at": 1791302190642
   },
   "martin + stahlregen - martin in da mash 14": {
    "on": true,
@@ -110,123 +136,123 @@
   },
   "phat + Eo.S. - Bass_responce_Red_Movements_Disorienting nebula3": {
    "on": true,
-   "at": 0
+   "at": 1791302315859
   },
   "Phat + Zylot + Eo.S. - work with lines": {
    "on": true,
-   "at": 0
+   "at": 1791302323394
   },
   "Phat_Zylot_Eo.S. spiral_Movements_Beatle": {
    "on": true,
-   "at": 0
+   "at": 1791302331210
   },
   "Phat_Zylot_Eo.S. square_faces_v2_alt_colours": {
    "on": true,
-   "at": 0
+   "at": 1791302339486
   },
   "PieturP - triptrap_(getting_concrete_visions_through_a_diafragma_version)": {
    "on": true,
-   "at": 0
+   "at": 1791302347668
   },
   "Redi Jedi - i dont think those were portabello mushrooms": {
    "on": true,
-   "at": 0
+   "at": 1791302367575
   },
   "Rocke - Answer.42 (New Mix 1) - mash0000 - slash and char p. jungle": {
-   "on": true,
-   "at": 0
+   "on": false,
+   "at": 1791302373864
   },
   "Rovastar - Explosive Minds": {
    "on": true,
-   "at": 0
+   "at": 1791302388163
   },
   "Rovastar - Harlequin\u2032s Fractal Encounter - cancer of saints": {
    "on": true,
-   "at": 0
+   "at": 1791302392894
   },
   "Rovastar - Oozing Resistance": {
    "on": true,
-   "at": 0
+   "at": 1791302417648
   },
   "Rovastar - Torrid Tales": {
    "on": true,
-   "at": 0
+   "at": 1791302422550
   },
   "Rovastar - Trippy Sperm (Jelly)": {
    "on": true,
-   "at": 0
+   "at": 1791302435437
   },
   "Rovastar + Che - Asylum Animations": {
-   "on": true,
-   "at": 0
+   "on": false,
+   "at": 1791302459596
   },
   "Rovastar + Flexi - Hurricane Nightmare (Moebius Mix)": {
    "on": true,
-   "at": 0
+   "at": 1791302468060
   },
   "Rovastar + Geiss - Hurricane Nightmare": {
-   "on": true,
-   "at": 0
+   "on": false,
+   "at": 1791302478878
   },
   "Rovastar + Geiss - Hyperkaleidoscope Glow 2 motion blur (Jelly)": {
    "on": true,
-   "at": 0
+   "at": 1791302504676
   },
   "Rovastar + Geiss - Hyperspace - kaleidoscope": {
-   "on": true,
-   "at": 0
+   "on": false,
+   "at": 1791302523686
   },
   "Rovastar + Loadus + Geiss - FractalDrop (Triple Mix)": {
    "on": true,
-   "at": 0
+   "at": 1791302543303
   },
   "Rovastar + Telek - Altars of Madness (Rolling Oceans Mix)": {
-   "on": true,
-   "at": 0
+   "on": false,
+   "at": 1791302554161
   },
   "stahlregen - old school, baby (spiral ornament)": {
    "on": true,
-   "at": 0
+   "at": 1791302578598
   },
   "Stahlregen & flexi + Geiss + Rovastar + Shifter - Fractal Feedback (for Hexcollie)": {
    "on": true,
-   "at": 0
+   "at": 1791302595498
   },
   "suksma - heretical crosscut playpen": {
    "on": true,
-   "at": 0
+   "at": 1791302617296
   },
   "TEcHNO & SandStorm - Psychodelic Highway": {
-   "on": true,
-   "at": 0
+   "on": false,
+   "at": 1791302656223
   },
   "Telek - City Helix Lattice": {
    "on": true,
-   "at": 0
+   "at": 1791302788654
   },
   "TonyMilkdrop - Magellan's Nebula [Flexi - fancy + $this shall not retain]": {
-   "on": true,
-   "at": 0
+   "on": false,
+   "at": 1791302802931
   },
   "Unchained - Fuzzy Sciences": {
-   "on": true,
-   "at": 0
+   "on": false,
+   "at": 1791302825934
   },
   "Unchained - Rewop": {
-   "on": true,
-   "at": 0
+   "on": false,
+   "at": 1791302848973
   },
   "Zylot - Crossing Over (Paint Spatter mix)": {
    "on": true,
-   "at": 0
+   "at": 1791302891774
   },
   "Zylot - In death there is life (Geiss Layered Mix) (Jelly)": {
    "on": true,
-   "at": 0
+   "at": 1791302904204
   },
   "Zylot - Paint Spill (Music Reactive Paint Mix)": {
    "on": true,
-   "at": 0
+   "at": 1791302908625
   },
   "Aderrasi - Halls Of Centrifuge": {
    "on": true,
@@ -238,7 +264,7 @@
   },
   "Zylot - True Visionary (Final Mix)": {
    "on": true,
-   "at": 0
+   "at": 1791302928467
   },
   "_Geiss - Artifact 01": {
    "on": true,
@@ -443,6 +469,254 @@
   "Flexi + amandio c - piercing 05 - Kopie (2) - Kopie": {
    "on": true,
    "at": 1791301099513
+  },
+  "flexi + bdrv - acid etching (jelly v5.5)": {
+   "on": true,
+   "at": 1791301109675
+  },
+  "flexi + geiss - pogo cubes vs. tokamak vs. game of life [stahls jelly 4.5 finish]": {
+   "on": true,
+   "at": 1791301122813
+  },
+  "Flexi + Martin - cascading decay swing": {
+   "on": true,
+   "at": 1791301149087
+  },
+  "flexi + stahlregen - jelly strike": {
+   "on": true,
+   "at": 1791301200025
+  },
+  "Flexi, martin + geiss - dedicated to the sherwin maxawow": {
+   "on": true,
+   "at": 1791301223902
+  },
+  "Flexi, Martin, Phat, Zylot + Eo.S - one way trip trap proof of concept [epileptic zoom tunnel edit]": {
+   "on": true,
+   "at": 1791301320532
+  },
+  "Geiss - Cauldron - painterly 2 (saturation remix)": {
+   "on": true,
+   "at": 1791301391569
+  },
+  "Geiss - Color Pox (Acid Impression Mix) (color saturation remix)": {
+   "on": true,
+   "at": 1791301411883
+  },
+  "Geiss - Feedback 2": {
+   "on": true,
+   "at": 1791301444483
+  },
+  "Geiss - Reaction Diffusion 3 (Lichen Mix)": {
+   "on": true,
+   "at": 1791301508953
+  },
+  "Geiss + Rovastar - Notions Of Tonality 2": {
+   "on": true,
+   "at": 1791301571538
+  },
+  "Ishan - Anuera": {
+   "on": true,
+   "at": 1791301632091
+  },
+  "Krash + Illusion + Geiss - Spiral Movement (Reaction Diffusion mix)": {
+   "on": true,
+   "at": 1791301663416
+  },
+  "LuxXx - Fuck Your Code ii": {
+   "on": true,
+   "at": 1791301673422
+  },
+  "martin - another kind of groove": {
+   "on": true,
+   "at": 1791301726978
+  },
+  "martin - basal ganglion": {
+   "on": true,
+   "at": 1791301749982
+  },
+  "martin - bombyx mori [flexi\u2032s logarithmic edit]": {
+   "on": true,
+   "at": 1791301761881
+  },
+  "Martin - cool morning": {
+   "on": true,
+   "at": 1791301788487
+  },
+  "Martin - Diabolo": {
+   "on": true,
+   "at": 1791301845725
+  },
+  "martin - disco mix 4": {
+   "on": true,
+   "at": 1791301863028
+  },
+  "Martin - disco mix 6": {
+   "on": true,
+   "at": 1791301874303
+  },
+  "martin - glass corridor": {
+   "on": true,
+   "at": 1791301940933
+  },
+  "martin - infinity (2010 update)": {
+   "on": true,
+   "at": 1791301964777
+  },
+  "martin - into the fireworks": {
+   "on": true,
+   "at": 1791301972848
+  },
+  "martin - soma in pink": {
+   "on": true,
+   "at": 1791302066146
+  },
+  "martin - starfield sectors": {
+   "on": true,
+   "at": 1791302082796
+  },
+  "martin - stormy sea (2010 update)": {
+   "on": true,
+   "at": 1791302101819
+  },
+  "martin - violet flash": {
+   "on": true,
+   "at": 1791302182706
+  },
+  "martin + stahlregen - martin in da mash 12": {
+   "on": false,
+   "at": 1791302205473
+  },
+  "martin + stahlregen - martin in da mash 12a": {
+   "on": false,
+   "at": 1791302211961
+  },
+  "martin + stahlregen - martin in da mash 3": {
+   "on": false,
+   "at": 1791302234111
+  },
+  "ORB - Blue Emotion": {
+   "on": false,
+   "at": 1791302267936
+  },
+  "ORB - Pastel Primer": {
+   "on": false,
+   "at": 1791302281228
+  },
+  "ORB - Sandblade": {
+   "on": false,
+   "at": 1791302287949
+  },
+  "orb - toxic goo": {
+   "on": true,
+   "at": 1791302304617
+  },
+  "PieturP - triptrap_(ultimate-trip-mix)": {
+   "on": false,
+   "at": 1791302354360
+  },
+  "Rovastar - A Million Miles From Earth (Wormhole Mix)": {
+   "on": false,
+   "at": 1791302381153
+  },
+  "Rovastar - Hyperspace": {
+   "on": false,
+   "at": 1791302412353
+  },
+  "Rovastar & Idiot24-7 - Balk Acid": {
+   "on": false,
+   "at": 1791302443648
+  },
+  "Rovastar & Loadus + Zylot - FractalDrop (Spark Machine v2.0)": {
+   "on": false,
+   "at": 1791302447937
+  },
+  "Rovastar + Fvese - Mosaic Waves": {
+   "on": false,
+   "at": 1791302473491
+  },
+  "Rovastar + Geiss - Hurricane Nightmare (Gold Chrome Mix)": {
+   "on": false,
+   "at": 1791302486130
+  },
+  "Rovastar + Geiss - Hurricane Nightmare (Relief Mix)": {
+   "on": true,
+   "at": 1791302488709
+  },
+  "Rovastar + Loadus + Geiss - Tone-mapped FractalDrop 7c": {
+   "on": false,
+   "at": 1791302548804
+  },
+  "shifter - dark tides bdrv mix 2": {
+   "on": false,
+   "at": 1791302560480
+  },
+  "Stahlregen & Boz + Eo.S + Geiss + Phat + Rovastar + Zylot - Machine Code [Jelly]": {
+   "on": false,
+   "at": 1791302585622
+  },
+  "stahlregen & geiss + rovastar - fields of flowers (mashup 9 - space flower rmx) - mash0001 - pack em in, we got a long haul + flashlight": {
+   "on": true,
+   "at": 1791302606714
+  },
+  "suksma - nip tuck": {
+   "on": false,
+   "at": 1791302628161
+  },
+  "suksma - Rovastar - Sunflower Passion (Enlightment Mix)_Phat_edit + flexi und martin shaders - circumflex in character classes in regular expression": {
+   "on": true,
+   "at": 1791302633399
+  },
+  "suksma - vector exp 1 - couldn\u2032t not": {
+   "on": false,
+   "at": 1791302645772
+  },
+  "Telek - Sine Wave": {
+   "on": false,
+   "at": 1791302796164
+  },
+  "TonyMilkdrop - Magellan's Nebula [Flexi - you enter first + multiverse]": {
+   "on": true,
+   "at": 1791302815826
+  },
+  "Unchained - All You Can Eat": {
+   "on": false,
+   "at": 1791302821137
+  },
+  "Unchained - Making a Science of It 4": {
+   "on": false,
+   "at": 1791302835496
+  },
+  "Unchained - Making a Science of It 7": {
+   "on": false,
+   "at": 1791302840307
+  },
+  "Unchained - Unified Drag 2": {
+   "on": false,
+   "at": 1791302853312
+  },
+  "Unchained & Rovastar - Wormhole Pillars (Hall of Shadows mix)": {
+   "on": false,
+   "at": 1791302858525
+  },
+  "yin - 190 - Temporal fluctuations": {
+   "on": false,
+   "at": 1791302872141
+  },
+  "yin - 191 - Temporal singularities": {
+   "on": false,
+   "at": 1791302884752
+  },
+  "Zylot - In death there is life (Geiss Layered Mix)": {
+   "on": false,
+   "at": 1791302902406
+  },
+  "Zylot - Star Ornament": {
+   "on": true,
+   "at": 1791302914967
+  },
+  "Zylot - True Visionary": {
+   "on": true,
+   "at": 1791302922205
   }
  }
 }
