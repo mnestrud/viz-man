@@ -14,6 +14,8 @@ export function createLive(settings) {
   let showing = false;
   let problem = "";
   let follow = null;
+  let track = null;
+  let trackListener = null;
 
   const relay = createRelay({
     host: settings.host,
@@ -28,6 +30,7 @@ export function createLive(settings) {
       },
       clear() {
         timeline.clear();
+        follow.noteClear();
       },
       end() {
         timeline.clear();
@@ -54,6 +57,10 @@ export function createLive(settings) {
     relay,
     onState(state) {
       if (state === "rejected") problem = "Token rejected or expired. Rebuild with a new token.";
+    },
+    onTrack(next) {
+      track = next;
+      if (trackListener) trackListener(next);
     },
   });
 
@@ -89,6 +96,12 @@ export function createLive(settings) {
     },
     get trimMs() {
       return trimMs;
+    },
+    get track() {
+      return track;
+    },
+    onTrack(fn) {
+      trackListener = fn;
     },
     nudgeTrim(deltaMs) {
       trimMs = Math.max(-TRIM_LIMIT_MS, Math.min(TRIM_LIMIT_MS, trimMs + deltaMs));

@@ -43,13 +43,20 @@ needs a long-lived token for a Music Assistant user.
 | Key | Action |
 |---|---|
 | ← / → | Previous / next visualizer |
-| ↑ / ↓ | MilkDrop: next / previous preset |
-| OK | Menu: visualizer, preset, preset timer, sync trim, Winamp colours, auto level, frame rate cap, hold screen when idle, debug readout |
+| ↑ / ↓ | MilkDrop: next / previous preset, within all presets or just the favourites |
+| OK | Menu: visualizer, preset, favourite, preset list (all / favourites), preset timer, track info, sync trim, Winamp colours, auto level, frame rate cap, hold screen when idle, debug readout |
 | Red / Green | Sync trim −25 ms / +25 ms |
+| Yellow | MilkDrop: add or remove the preset from the favourites |
+| Blue | MilkDrop: switch between all presets and the favourites |
 | Back | Close the menu, or leave the app |
 
 While music plays the app stops the TV's screensaver from starting; when it
 stops, the screensaver runs as usual unless "Hold screen when idle" is on.
+
+When a track starts, its artist, title, album and label slide in at the lower
+left for a few seconds, the way MTV captioned videos. "Track info" in the menu
+keeps the card on screen permanently, or turns it off. The details come from
+Music Assistant's queue, so they are as complete as its metadata.
 
 ## Settings
 

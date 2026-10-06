@@ -18,6 +18,8 @@ const TRIM_STEP_MS = 25;
 const MESSAGE_REFRESH_MS = 1000;
 const HINT_MS = 3000;
 const TOAST_MS = 3500;
+const TRACK_CARD_MS = 9000;
+const TRACK_MODES = ["start", "always", "off"];
 
 let booted = false;
 
@@ -42,6 +44,32 @@ function boot(event) {
     clearTimeout(toastTimer);
     toastTimer = setTimeout(() => (element.style.opacity = "0"), TOAST_MS);
   }
+  // The track card: artist, "title", album, label, lower left, as MTV
+  // captioned videos. Shown for a while when a track starts, or always.
+  const trackCard = byId("track");
+  let trackMode = loadPref("trackInfo", "start");
+  let trackTimer = 0;
+  function fillTrackCard(track) {
+    byId("track-artist").textContent = track.artist;
+    byId("track-title").textContent = track.title ? "\u201c" + track.title + "\u201d" : "";
+    byId("track-album").textContent = track.album + (track.year ? " (" + track.year + ")" : "");
+    byId("track-label").textContent = track.label;
+  }
+  function showTrackCard(track, timed) {
+    clearTimeout(trackTimer);
+    if (!track || trackMode === "off") {
+      trackCard.className = "";
+      return;
+    }
+    fillTrackCard(track);
+    trackCard.className = "shown";
+    if (timed) trackTimer = setTimeout(() => (trackCard.className = ""), TRACK_CARD_MS);
+  }
+  function applyTrackMode() {
+    const track = live ? live.track : null;
+    showTrackCard(track, trackMode === "start");
+  }
+
   const canvas = byId("canvas");
   const message = byId("message");
   const hint = byId("hint");
@@ -69,6 +97,8 @@ function boot(event) {
   engine.register(classicModes);
   engine.register(wavescopeModes);
   if (!milkdropOff) engine.register([milkdrop]);
+  if (live) live.onTrack((track) => showTrackCard(track, trackMode === "start"));
+
   engine.onModeChange((mode) => {
     savePref("mode", mode.id);
     if (mode !== milkdrop) toast(mode.name); // MilkDrop announces its preset instead
@@ -90,6 +120,21 @@ function boot(event) {
       visible: () => engine.mode === milkdrop,
       value: () => milkdrop.presetPosition + "  " + milkdrop.presetName,
       change: (direction) => milkdrop.step(direction),
+    },
+    {
+      label: "Favourite",
+      visible: () => engine.mode === milkdrop && milkdrop.ready,
+      value: () => (milkdrop.isFavourite ? "\u2605 yes" : "no"),
+      change: () => toast(milkdrop.toggleFavourite() ? "\u2605 Added to favourites" : "Removed from favourites"),
+    },
+    {
+      label: "Preset list",
+      visible: () => engine.mode === milkdrop,
+      value: () => (milkdrop.onlyFavourites ? "favourites (" + milkdrop.favouriteCount + ")" : "all"),
+      change() {
+        milkdrop.onlyFavourites = !milkdrop.onlyFavourites;
+        if (milkdrop.onlyFavourites && !milkdrop.favouriteCount) toast("No favourites yet: showing all presets");
+      },
     },
     {
       label: "Change preset",
@@ -114,6 +159,16 @@ function boot(event) {
         clearMilkdropBlocks();
         savePref("mode", "milkdrop");
         location.reload();
+      },
+    },
+    {
+      label: "Track info",
+      visible: () => !!live,
+      value: () => ({ start: "at track start", always: "always", off: "off" })[trackMode],
+      change(direction) {
+        trackMode = TRACK_MODES[(TRACK_MODES.indexOf(trackMode) + direction + TRACK_MODES.length) % TRACK_MODES.length];
+        savePref("trackInfo", trackMode);
+        applyTrackMode();
       },
     },
     {
@@ -165,6 +220,9 @@ function boot(event) {
         mode: engine.mode ? engine.mode.name : "-",
         preset: engine.mode === milkdrop ? milkdrop.presetPosition + " " + milkdrop.presetName : "-",
         slowPresets: milkdrop.slowCount,
+        favourites: milkdrop.favouriteCount + (milkdrop.onlyFavourites ? " (browsing favourites)" : ""),
+        track: live && live.track ? live.track.artist + " / " + live.track.title : "-",
+        trackInfo: trackMode + (trackCard.className === "shown" ? ", card shown" : ""),
         fps: engine.fps + " (cap " + engine.fpsCap + ")",
         canvas: (engine.mode && engine.mode.gl ? byId("gl").width + "x" + byId("gl").height + " gl" : canvas.width + "x" + canvas.height),
         window: window.innerWidth + "x" + window.innerHeight,
@@ -201,6 +259,12 @@ function boot(event) {
     else if (name === "ok") menu.open();
     else if (name === "red" && live) live.nudgeTrim(-TRIM_STEP_MS);
     else if (name === "green" && live) live.nudgeTrim(TRIM_STEP_MS);
+    else if (name === "yellow" && engine.mode === milkdrop && milkdrop.ready) {
+      toast(milkdrop.toggleFavourite() ? "\u2605 Added to favourites" : "Removed from favourites");
+    } else if (name === "blue" && engine.mode === milkdrop) {
+      milkdrop.onlyFavourites = !milkdrop.onlyFavourites;
+      toast(milkdrop.onlyFavourites ? (milkdrop.favouriteCount ? "Favourites (" + milkdrop.favouriteCount + ")" : "No favourites yet: all presets") : "All presets");
+    }
     else if (name === "back") exitApp();
   }
   installKeys(onKey);
@@ -219,7 +283,7 @@ function boot(event) {
   });
   hint.addEventListener("click", () => menu.open());
 
-  startDrift([byId("stage"), message]);
+  startDrift([byId("stage"), message, trackCard]);
 
   startDevlink({
     base: settings.report,

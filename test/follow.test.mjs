@@ -2,7 +2,7 @@ import assert from "node:assert/strict";
 import { test } from "node:test";
 import { createFollow } from "../src/follow.js";
 
-function harness(t, pinned = "") {
+function harness(t, pinned = "", onTrack) {
   t.mock.timers.enable({ apis: ["setTimeout", "Date"] });
   const sockets = [];
   class Fake {
@@ -31,15 +31,17 @@ function harness(t, pinned = "") {
     }
   }
   const relay = { connects: [], state: "closed", connect(id) { this.connects.push(id); this.state = "open"; } };
-  const follow = createFollow({ host: "h", token: "tok", pinned, relay, WebSocketImpl: Fake });
+  const follow = createFollow({ host: "h", token: "tok", pinned, relay, WebSocketImpl: Fake, onTrack });
   return { follow, relay, sockets };
 }
 
-test("a pinned player is connected straight away, without asking the API", (t) => {
+test("a pinned player is connected straight away; the API is only used for track info", (t) => {
   const { follow, relay, sockets } = harness(t, "RINCON_PIN");
   follow.start();
   assert.deepEqual(relay.connects, ["RINCON_PIN"]);
-  assert.equal(sockets.length, 0);
+  sockets[0].login();
+  sockets[0].queues({ RINCON_PIN: "idle", other: "playing" });
+  assert.deepEqual(relay.connects, ["RINCON_PIN"], "never switches away from the pinned player");
 });
 
 test("it logs in, polls, and connects the relay to the first playing queue", (t) => {
@@ -61,22 +63,43 @@ test("it logs in, polls, and connects the relay to the first playing queue", (t)
   assert.equal(follow.state, "watching");
 });
 
-test("once frames flow it stops polling; after the stream ends it looks again", (t) => {
-  const { follow, relay, sockets } = harness(t);
+test("once frames flow it polls the watched queue for its track; after the stream ends it looks around again", (t) => {
+  const tracks = [];
+  const { follow, relay, sockets } = harness(t, "", (track) => tracks.push(track));
   follow.start();
   sockets[0].login();
   sockets[0].queues({ a: "playing" });
   follow.noteFrame();
-  assert.equal(sockets[0].readyState, 3, "API socket closed while streaming");
+  assert.equal(sockets[0].readyState, 1, "API socket stays open while streaming");
+  const last = () => sockets[0].sent[sockets[0].sent.length - 1];
+  assert.deepEqual(last(), { message_id: "queue", command: "player_queues/get", args: { queue_id: "a" } });
+
+  sockets[0].receive({ message_id: "queue", result: { queue_id: "a", current_item: { queue_item_id: "i1", name: "x", media_item: { name: "Would?", artists: [{ name: "Alice In Chains" }], album: { name: "Dirt", year: 1992 }, metadata: { label: "Columbia" } } } } });
+  assert.deepEqual(tracks, [{ id: "i1", title: "Would?", artist: "Alice In Chains", album: "Dirt", year: 1992, label: "Columbia" }]);
+  sockets[0].receive({ message_id: "queue", result: { queue_id: "a", current_item: { queue_item_id: "i1", name: "x", media_item: { name: "Would?" } } } });
+  assert.equal(tracks.length, 1, "the same item is not reported twice");
+
+  t.mock.timers.tick(4000);
+  assert.equal(last().command, "player_queues/get", "keeps asking about the track while streaming");
 
   follow.noteEnd();
-  t.mock.timers.tick(2999);
-  assert.equal(sockets.length, 1);
-  t.mock.timers.tick(1);
-  assert.equal(sockets.length, 2, "polling resumed");
-  sockets[1].login();
-  sockets[1].queues({ a: "idle", b: "playing" });
+  t.mock.timers.tick(3000);
+  assert.equal(last().command, "player_queues/all", "back to looking for a playing queue");
+  sockets[0].queues({ a: "idle", b: "playing" });
   assert.deepEqual(relay.connects, ["a", "b"]);
+});
+
+test("a radio stream's single 'Artist - Title' string is split; no item means no track", (t) => {
+  const tracks = [];
+  const { follow, sockets } = harness(t, "", (track) => tracks.push(track));
+  follow.start();
+  sockets[0].login();
+  sockets[0].queues({ r: "playing" });
+  follow.noteFrame();
+  sockets[0].receive({ message_id: "queue", result: { queue_id: "r", current_item: { queue_item_id: "s1", name: "Boards of Canada - Roygbiv" } } });
+  assert.deepEqual(tracks[0], { id: "s1", title: "Roygbiv", artist: "Boards of Canada", album: "", year: "", label: "" });
+  sockets[0].receive({ message_id: "queue", result: { queue_id: "r", current_item: null } });
+  assert.equal(tracks[1], null);
 });
 
 test("a queue that claims to play but sends nothing is skipped until it stops", (t) => {
@@ -98,9 +121,8 @@ test("a queue that claims to play but sends nothing is skipped until it stops", 
   follow.noteFrame();
   follow.noteEnd();
   t.mock.timers.tick(3000);
-  sockets[1].login();
-  sockets[1].queues({ tv: "idle", office: "idle" });
-  sockets[1].queues({ tv: "playing", office: "idle" });
+  sockets[0].queues({ tv: "idle", office: "idle" });
+  sockets[0].queues({ tv: "playing", office: "idle" });
   assert.deepEqual(relay.connects, ["tv", "office", "tv"]);
 });
 

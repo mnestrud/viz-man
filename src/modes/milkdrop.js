@@ -66,6 +66,8 @@ export function createMilkdropMode(onFail, onNotice) {
   let frames = 0;
   let sincePreset = 0;
   let slow = loadPref("slowPresets", []);
+  let favourites = loadPref("favourites", []);
+  let onlyFavourites = loadPref("onlyFavourites", false);
   let rotateSeconds = loadPref("presetRotate", 0);
   // frame-rate watch for the current preset
   let windowTime = 0;
@@ -96,12 +98,19 @@ export function createMilkdropMode(onFail, onNotice) {
     onNotice(names[index]);
   }
 
-  // Move to the next preset in `direction` that is not known to be slow.
+  // Whether a preset is in the list being browsed: all of them, or the
+  // favourites (when there are any), minus the ones known to be slow.
+  function listed(name) {
+    if (slow.indexOf(name) >= 0) return false;
+    return !onlyFavourites || !favourites.length || favourites.indexOf(name) >= 0;
+  }
+
+  // Move to the next listed preset in `direction`.
   function step(direction, blend) {
     if (!visualizer || !names.length) return;
     for (let tried = 0; tried < names.length; tried++) {
       index = (index + direction + names.length) % names.length;
-      if (slow.indexOf(names[index]) < 0) break;
+      if (listed(names[index])) break;
     }
     showIndexed(blend === undefined ? BLEND_SECONDS : blend);
   }
@@ -109,9 +118,9 @@ export function createMilkdropMode(onFail, onNotice) {
   function random() {
     if (!visualizer || names.length < 2) return;
     const from = index;
-    for (let tried = 0; tried < 20; tried++) {
+    for (let tried = 0; tried < 40; tried++) {
       index = Math.floor(Math.random() * names.length);
-      if (index !== from && slow.indexOf(names[index]) < 0) break;
+      if (index !== from && listed(names[index])) break;
     }
     showIndexed(BLEND_SECONDS);
   }
@@ -206,6 +215,28 @@ export function createMilkdropMode(onFail, onNotice) {
       slow = [];
       savePref("slowPresets", slow);
     },
+    // Add or remove the current preset; returns whether it is now a favourite.
+    toggleFavourite() {
+      if (!current) return false;
+      const at = favourites.indexOf(current);
+      if (at >= 0) favourites.splice(at, 1);
+      else favourites.push(current);
+      savePref("favourites", favourites);
+      return at < 0;
+    },
+    get isFavourite() {
+      return favourites.indexOf(current) >= 0;
+    },
+    get favouriteCount() {
+      return favourites.length;
+    },
+    get onlyFavourites() {
+      return onlyFavourites;
+    },
+    set onlyFavourites(on) {
+      onlyFavourites = on;
+      savePref("onlyFavourites", on);
+    },
     get slowCount() {
       return slow.length;
     },
@@ -222,8 +253,12 @@ export function createMilkdropMode(onFail, onNotice) {
     get presetName() {
       return visualizer ? current : loading ? "loading" : "";
     },
+    // "n/total", counted within the list being browsed.
     get presetPosition() {
-      return visualizer ? index + 1 + "/" + names.length : "";
+      if (!visualizer) return "";
+      const list = names.filter(listed);
+      const at = list.indexOf(current);
+      return at < 0 ? "-/" + list.length : at + 1 + "/" + list.length;
     },
   };
 }
