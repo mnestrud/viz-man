@@ -35,9 +35,13 @@ function boot(event) {
   );
   const byId = (id) => document.getElementById(id);
 
-  // A line of text that fades: the visualizer or preset just switched to.
+  // A line of text that fades: the visualizer or preset just switched to,
+  // a favourite added, settings synced. Shown only with the debug readout on;
+  // otherwise the screen carries nothing but the visuals and the track card.
   let toastTimer = 0;
+  let debug = null; // the readout, created once the engine exists
   function toast(text) {
+    if (!debug || !debug.visible) return;
     const element = byId("toast");
     element.textContent = text;
     element.style.opacity = "1";
@@ -116,11 +120,16 @@ function boot(event) {
     analysis.autoLevel = loadPref("autoLevel", true);
     classicOptions.album = loadPref("classicAlbum", false);
     holdWhenIdle = loadPref("holdWhenIdle", settings.holdWhenIdle);
-    trackMode = loadPref("trackInfo", "start");
     engine.setFpsCap(loadPref("fpsCap", 60));
     milkdrop.reloadPrefs();
     if (live) live.reloadTrim();
-    applyTrackMode();
+    // The track card is re-shown only if its setting actually changed, not
+    // on every sync with the account.
+    const nextTrackMode = loadPref("trackInfo", "start");
+    if (nextTrackMode !== trackMode) {
+      trackMode = nextTrackMode;
+      applyTrackMode();
+    }
   }
   if (live) {
     let firstRemote = true;
@@ -267,7 +276,7 @@ function boot(event) {
     { label: "Close menu", change: () => menu.close() },
   ]);
 
-  const debug = createDebug(byId("debug"), () =>
+  debug = createDebug(byId("debug"), () =>
     Object.assign(
       {
         version: typeof VIZ_VERSION === "string" ? VIZ_VERSION : "dev",
