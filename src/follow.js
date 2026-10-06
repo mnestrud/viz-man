@@ -31,6 +31,7 @@ export function createFollow({ host, token, pinned, relay, WebSocketImpl, onStat
   let state = "idle";
   let trackId = null;
   let remotePrefs = null; // the user's whole preferences object, once read
+  let base = null; // shared values as last synced with the account
   let pendingSave = null;
   let saveTimer = 0;
   let refreshTimer = 0;
@@ -132,15 +133,44 @@ export function createFollow({ host, token, pinned, relay, WebSocketImpl, onStat
     return shared;
   }
 
+  // Shared lists are merged as sets: what this TV added since it last synced
+  // is added, what it removed is removed, and whatever other TVs did in the
+  // meantime stays.
+  function mergeShared(theirs, mine, before) {
+    if (!Array.isArray(mine)) return mine === undefined ? theirs : mine;
+    const was = Array.isArray(before) ? before : [];
+    const now = Array.isArray(theirs) ? theirs.slice() : [];
+    for (const item of was) {
+      const at = mine.indexOf(item) < 0 ? now.indexOf(item) : -1;
+      if (at >= 0) now.splice(at, 1);
+    }
+    for (const item of mine) if (was.indexOf(item) < 0 && now.indexOf(item) < 0) now.push(item);
+    return now;
+  }
+
+  // Asks for a fresh copy of the account first, so the merge is against what
+  // other TVs have done since; the "me" reply then calls pushSave.
+  function requestSave() {
+    clearTimeout(saveTimer);
+    saveTimer = 0;
+    if (!pendingSave || !socket || socket.readyState !== 1 || !authed) return;
+    socket.send(JSON.stringify({ message_id: "me", command: "auth/me" }));
+  }
+
   // Keeps this app's preferences on the Music Assistant user, so a reinstall
   // (which can wipe the TV's storage) gets them back: shared keys at the top,
   // everything else under this TV's device id.
   //   vizman: { favourites: [...], devices: { <deviceId>: {...} } }
   function pushSave() {
-    clearTimeout(saveTimer);
-    saveTimer = 0;
     if (!pendingSave || remotePrefs === null || !socket || socket.readyState !== 1 || !authed) return;
-    const ours = Object.assign({}, remotePrefs[PREFS_KEY] || {}, sharedOf(pendingSave));
+    const theirs = sharedOf(remotePrefs[PREFS_KEY] || {});
+    const mine = sharedOf(pendingSave);
+    const merged = {};
+    for (const key of sharedKeys || []) {
+      const value = mergeShared(theirs[key], mine[key], (base || {})[key]);
+      if (value !== undefined) merged[key] = value;
+    }
+    const ours = Object.assign({}, remotePrefs[PREFS_KEY] || {}, merged);
     const device = {};
     for (const key of Object.keys(pendingSave)) if ((sharedKeys || []).indexOf(key) < 0) device[key] = pendingSave[key];
     ours.devices = Object.assign({}, ours.devices || {});
@@ -188,7 +218,15 @@ export function createFollow({ host, token, pinned, relay, WebSocketImpl, onStat
       } else if (message.message_id === "me" && message.result) {
         remotePrefs = message.result.preferences || {};
         const ours = remotePrefs[PREFS_KEY] || {};
-        if (onRemotePrefs) onRemotePrefs(sharedOf(ours), (ours.devices || {})[deviceId] || {});
+        // The first read always reaches the page (it restores settings); later
+        // ones are skipped while a save is waiting, which gets merged instead.
+        if (base === null) {
+          base = {}; // nothing merged yet: a first save adds to the account's lists
+          if (onRemotePrefs) onRemotePrefs(sharedOf(ours), (ours.devices || {})[deviceId] || {});
+        } else if (!pendingSave) {
+          base = sharedOf(ours);
+          if (onRemotePrefs) onRemotePrefs(sharedOf(ours), (ours.devices || {})[deviceId] || {});
+        }
         if (pendingSave) pushSave();
         clearTimeout(refreshTimer);
         refreshTimer = setTimeout(() => {
@@ -196,6 +234,10 @@ export function createFollow({ host, token, pinned, relay, WebSocketImpl, onStat
         }, REMOTE_REFRESH_MS);
       } else if (message.message_id === "save" && message.result) {
         remotePrefs = message.result.preferences || remotePrefs;
+        const saved = sharedOf(remotePrefs[PREFS_KEY] || {});
+        base = saved;
+        // Another TV's changes may have been merged in; let the page adopt them.
+        if (onRemotePrefs) onRemotePrefs(saved, {});
       }
     };
     ws.onclose = () => {
@@ -253,7 +295,7 @@ export function createFollow({ host, token, pinned, relay, WebSocketImpl, onStat
     savePrefs(snapshot) {
       pendingSave = snapshot;
       clearTimeout(saveTimer);
-      saveTimer = setTimeout(pushSave, SAVE_DEBOUNCE_MS);
+      saveTimer = setTimeout(requestSave, SAVE_DEBOUNCE_MS);
     },
     // The relay refused this player.
     noteError() {

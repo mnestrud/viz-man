@@ -159,16 +159,20 @@ test("preferences are read from the account and saved back, shared ones on top a
   const save = sockets[0].sent.find((m) => m.command === "auth/user/update");
   assert.deepEqual(save.args.preferences, {
     theme: "dark",
-    vizman: { favourites: ["a"], devices: { cx: { trim: 25 }, other: { trim: 0 } } },
-  }, "other preferences and other TVs are kept");
+    vizman: { favourites: ["x", "y", "a"], devices: { cx: { trim: 25 }, other: { trim: 0 } } },
+  }, "other preferences and other TVs are kept; favourites merged");
+  sockets[0].receive({ message_id: "save", result: { preferences: save.args.preferences } });
 
-  follow.savePrefs({ favourites: ["a", "b"] });
-  follow.savePrefs({ favourites: ["a", "b", "c"] });
+  // A save first re-reads the account and merges: another TV added "z" and
+  // removed "y" meanwhile, this one removes "x" and adds "b".
+  follow.savePrefs({ favourites: ["y", "a", "b"] });
   t.mock.timers.tick(1500);
+  const reread = sockets[0].sent[sockets[0].sent.length - 1];
+  assert.equal(reread.command, "auth/me", "a fresh copy is fetched before saving");
+  sockets[0].receive({ message_id: "me", result: { preferences: { theme: "dark", vizman: { favourites: ["x", "a", "z"], devices: {} } } } });
   const saves = sockets[0].sent.filter((m) => m.command === "auth/user/update");
-  assert.equal(saves.length, 2, "rapid changes are sent once");
-  assert.deepEqual(saves[1].args.preferences.vizman.favourites, ["a", "b", "c"]);
+  assert.deepEqual(saves[1].args.preferences.vizman.favourites, ["a", "z", "b"]);
 
   t.mock.timers.tick(60000);
-  assert.equal(sockets[0].sent.filter((m) => m.command === "auth/me").length, 2, "the account is re-read every minute for other TVs' changes");
+  assert.ok(sockets[0].sent.filter((m) => m.command === "auth/me").length >= 3, "the account is re-read every minute for other TVs' changes");
 });

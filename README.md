@@ -48,6 +48,10 @@ needs a long-lived token for a Music Assistant user.
 | Red / Green | Sync trim −25 ms / +25 ms |
 | Yellow | MilkDrop: add or remove the preset from the favourites |
 | Blue | MilkDrop: switch between all presets and the favourites |
+
+In a browser, F and L stand in for yellow and blue, R and G for red and green;
+arrows, Enter and Escape work as on the remote. Favourites marked in the
+browser sync to the TVs through the account like any other.
 | Back | Close the menu, or leave the app |
 
 While music plays the app stops the TV's screensaver from starting; when it
