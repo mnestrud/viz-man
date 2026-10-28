@@ -1,0 +1,12 @@
+{
+  "packages": [
+    {
+      "id": "net.botworth.vizman",
+      "title": "viz-man",
+      "shortDescription": "<p>A full-screen MilkDrop visualizer for <a href=\"https://music-assistant.io/\">Music Assistant</a>.</p>",
+      "fullDescriptionUrl": "https://raw.githubusercontent.com/mnestrud/viz-man/main/description.html",
+      "iconUri": "https://github.com/mnestrud/viz-man/blob/main/app/largeIcon.png?raw=true",
+      "manifestUrl": "https://github.com/mnestrud/viz-man/releases/latest/download/net.botworth.vizman.manifest.json"
+    }
+  ]
+}
